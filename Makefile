@@ -1,4 +1,4 @@
-.PHONY: doctor ingest extract expand validate today stats practice speak
+.PHONY: doctor ingest extract expand validate today stats practice speak test
 
 doctor:
 	uv run mandarin doctor
@@ -26,3 +26,6 @@ stats:
 
 practice:
 	uv run mandarin practice --latest
+
+test:
+	uv run python -m unittest discover -s tests
