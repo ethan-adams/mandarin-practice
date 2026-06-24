@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 
 from mandarin_practice.doctor import run_doctor
+from mandarin_practice.expand import DEFAULT_OUTPUT, expand_practice
 from mandarin_practice.extract import extract_lessons
 from mandarin_practice.ingest import ingest_lessons
 from mandarin_practice.paths import PROJECT_ROOT
@@ -38,6 +39,28 @@ def main() -> None:
         help="Overwrite existing extracted text files.",
     )
 
+    expand_parser = subparsers.add_parser(
+        "expand",
+        help="Generate extra practice from known lesson patterns.",
+    )
+    expand_parser.add_argument(
+        "--count",
+        type=int,
+        default=120,
+        help="Number of generated cards. Use 0 for all available generated cards.",
+    )
+    expand_parser.add_argument(
+        "--output",
+        default=DEFAULT_OUTPUT,
+        help=f"Output JSON filename under lessons/structured/. Defaults to {DEFAULT_OUTPUT}.",
+    )
+    expand_parser.add_argument(
+        "--seed",
+        type=int,
+        default=260620,
+        help="Random seed for deterministic card ordering.",
+    )
+
     practice_parser = subparsers.add_parser("practice", help="Run call/response drills.")
     practice_parser.add_argument(
         "--latest",
@@ -63,10 +86,11 @@ def main() -> None:
         ingest_lessons(Path(args.source).expanduser(), args.pattern)
     elif args.command == "extract":
         extract_lessons(force=args.force)
+    elif args.command == "expand":
+        expand_practice(count=args.count, output=args.output, seed=args.seed)
     elif args.command == "practice":
         practice(latest=args.latest, lesson_id=args.lesson, limit=args.limit)
 
 
 if __name__ == "__main__":
     main()
-

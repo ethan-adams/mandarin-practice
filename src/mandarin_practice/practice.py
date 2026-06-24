@@ -13,12 +13,13 @@ def _load_lesson(path: Path) -> dict:
 
 
 def _select_lessons(latest: bool, lesson_id: str | None) -> list[Path]:
-    lessons = sorted(STRUCTURED_DIR.glob("Ethan_*.json"))
     if lesson_id:
         path = STRUCTURED_DIR / f"{lesson_id}.json"
         return [path] if path.exists() else []
     if latest:
+        lessons = sorted(STRUCTURED_DIR.glob("Ethan_*.json"))
         return lessons[-1:] if lessons else []
+    lessons = sorted(STRUCTURED_DIR.glob("*.json"))
     return lessons
 
 
@@ -76,4 +77,3 @@ def practice(latest: bool = False, lesson_id: str | None = None, limit: int = 0)
     if attempted:
         print()
         print(f"Score: {correct}/{attempted}")
-

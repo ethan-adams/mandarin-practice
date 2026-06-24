@@ -10,6 +10,7 @@ The repo intentionally does not commit lesson PDFs, extracted text, generated ca
 uv run mandarin doctor
 uv run mandarin ingest --source ~/Downloads
 uv run mandarin extract
+uv run mandarin expand
 uv run mandarin practice --latest
 ```
 
@@ -19,7 +20,8 @@ uv run mandarin practice --latest
 2. `extract` turns PDFs into text under `lessons/extracted/`.
 3. Lesson text is reviewed or transformed into structured cards under `lessons/structured/`.
 4. `practice` runs a Paul Noble-style call/response loop from those cards.
-5. Later, `audio` can export prompt/silence/answer practice tracks.
+5. `expand` creates extra practice from the lesson patterns you have already seen.
+6. Later, `audio` can export prompt/silence/answer practice tracks.
 
 ## Recommended Local Tools
 
@@ -58,3 +60,22 @@ Structured lesson files live at `lessons/structured/Ethan_YYMMDD.json`:
 - Add audio session export with English prompt, silence, Mandarin answer, repeat.
 - Add a small local web UI after the CLI loop feels right.
 
+## Extra Practice
+
+Generate extrapolated cards:
+
+```bash
+uv run mandarin expand --count 120
+```
+
+Then practice them together with the lesson cards:
+
+```bash
+uv run mandarin practice
+```
+
+Or practice only the generated deck:
+
+```bash
+uv run mandarin practice --lesson Review_expanded
+```

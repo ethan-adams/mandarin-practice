@@ -12,7 +12,7 @@ Create a low-friction practice system that turns weekly Mandarin tutor PDFs into
 
 ## Principles
 
-- Keep tutor PDFs and generated lesson content local by default.
+- Keep tutor PDFs, extracted text, and generated lesson content local by default.
 - Make the weekly workflow one command once the pipeline is stable.
 - Prefer editable intermediate files so bad OCR or bad LLM output can be fixed quickly.
 - Build the CLI first, then add a local web UI after the workflow proves itself.
@@ -52,7 +52,7 @@ Optional:
 
 - Private GitHub repo.
 - Python CLI installed with `uv`.
-- `doctor`, `ingest`, `extract`, and `practice` commands.
+- `doctor`, `ingest`, `extract`, `expand`, and `practice` commands.
 - Local lesson files ignored by git.
 
 ### 2. Extraction
@@ -72,8 +72,15 @@ Optional:
 - Add spaced repetition state.
 - Support lesson-specific, latest-only, and mixed review sessions.
 - Track misses and resurface weak cards.
+- Keep extrapolated cards tagged as generated so they can be separated from tutor material.
 
-### 5. Audio Sessions
+### 5. Pattern Expansion
+
+- Generate extra cards from known grammar and vocabulary patterns.
+- Keep output editable in `lessons/structured/Review_expanded.json`.
+- Prefer deterministic generation so the same seed produces the same deck.
+
+### 6. Audio Sessions
 
 - Generate call/response tracks:
   - English prompt
@@ -82,8 +89,7 @@ Optional:
   - repeat
 - Export MP3s to `lessons/audio/`.
 
-### 6. Local UI
+### 7. Local UI
 
 - Add a small local app only after the data model stabilizes.
 - Keep the app focused on fast practice, review, and correction.
-
