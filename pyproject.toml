@@ -1,0 +1,20 @@
+[project]
+name = "mandarin-lesson-practice"
+version = "0.1.0"
+description = "Turn Mandarin tutor lesson PDFs into call/response practice."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+mandarin = "mandarin_practice.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mandarin_practice"]
