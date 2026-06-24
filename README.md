@@ -11,7 +11,46 @@ uv run mandarin doctor
 uv run mandarin ingest --source ~/Downloads
 uv run mandarin extract
 uv run mandarin expand
+uv run mandarin validate
+uv run mandarin today
+```
+
+For normal daily use, run:
+
+```bash
+uv run mandarin today
+```
+
+That practices cards due today, speaks each Mandarin answer with the local
+`Tingting` voice, and saves your review history under `lessons/state/`.
+
+Useful follow-ups:
+
+```bash
+uv run mandarin speak
+uv run mandarin stats
+uv run mandarin practice --mode new --limit 20
 uv run mandarin practice --latest
+uv run mandarin practice --lesson Ethan_260620
+uv run mandarin practice --no-audio
+```
+
+For audiobook-style call/response practice, run:
+
+```bash
+uv run mandarin speak --limit 10
+```
+
+The tool speaks the English prompt, records your spoken Mandarin response,
+plays the native Mandarin answer, then replays your recording so you can compare.
+Responses are saved under `lessons/audio/responses/`.
+
+Useful voice options:
+
+```bash
+uv run mandarin speak --mandarin-voice "Sandy (Chinese (China mainland))"
+uv run mandarin speak --mandarin-voice "Tingting (Chinese (China mainland))"
+uv run mandarin speak --seconds 7 --no-replay
 ```
 
 ## System Shape
@@ -19,9 +58,15 @@ uv run mandarin practice --latest
 1. `ingest` copies new `Ethan_*.pdf` files into `lessons/raw/` and records metadata.
 2. `extract` turns PDFs into text under `lessons/extracted/`.
 3. Lesson text is reviewed or transformed into structured cards under `lessons/structured/`.
-4. `practice` runs a Paul Noble-style call/response loop from those cards.
-5. `expand` creates extra practice from the lesson patterns you have already seen.
-6. Later, `audio` can export prompt/silence/answer practice tracks.
+4. `validate` checks structured cards before practice.
+5. `today` runs a due-card call/response loop and updates review history.
+6. `speak` runs audiobook-style voice response practice and records your answers.
+7. `practice` can drill all cards, new cards, a lesson, or the latest lesson.
+8. `expand` creates extra practice from the lesson patterns you have already seen.
+9. Later, `audio` can export prompt/silence/answer practice tracks.
+
+Set `MANDARIN_PRACTICE_HOME=/path/to/project-or-data-root` if you want to run
+the command from another folder while keeping lesson data in this repo.
 
 ## Recommended Local Tools
 
@@ -56,7 +101,7 @@ Structured lesson files live at `lessons/structured/Ethan_YYMMDD.json`:
 ## Near-Term Milestones
 
 - Add LLM-assisted conversion from extracted lesson text to cards.
-- Add spaced repetition scheduling.
+- Tune spaced repetition scheduling.
 - Add audio session export with English prompt, silence, Mandarin answer, repeat.
 - Add a small local web UI after the CLI loop feels right.
 

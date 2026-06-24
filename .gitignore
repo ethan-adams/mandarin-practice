@@ -10,8 +10,9 @@ lessons/raw/*
 lessons/extracted/*
 lessons/structured/*
 lessons/audio/*
+lessons/state/*
 !lessons/raw/.gitkeep
 !lessons/extracted/.gitkeep
 !lessons/structured/.gitkeep
 !lessons/audio/.gitkeep
-
+!lessons/state/.gitkeep

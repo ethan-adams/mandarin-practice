@@ -4,6 +4,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from mandarin_practice.audio import DEFAULT_MANDARIN_VOICE
 from mandarin_practice.paths import ensure_project_dirs
 
 
@@ -39,12 +40,40 @@ def _version(command: str) -> str:
     return first_line.strip()
 
 
+def _tesseract_languages() -> set[str]:
+    try:
+        result = subprocess.run(
+            ["tesseract", "--list-langs"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except OSError:
+        return set()
+    return {line.strip() for line in result.stdout.splitlines()[1:] if line.strip()}
+
+
+def _say_voices() -> set[str]:
+    try:
+        result = subprocess.run(
+            ["say", "-v", "?"],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+    except OSError:
+        return set()
+    return {line.split()[0] for line in result.stdout.splitlines() if line.strip()}
+
+
 def run_doctor(project_root: Path) -> None:
     ensure_project_dirs()
     print(f"Project: {project_root}")
     print()
     print("Folders:")
-    for folder in ["lessons/raw", "lessons/extracted", "lessons/structured", "lessons/audio"]:
+    for folder in ["lessons/raw", "lessons/extracted", "lessons/structured", "lessons/audio", "lessons/state"]:
         path = project_root / folder
         print(f"  ok  {folder}" if path.exists() else f"  miss {folder}")
 
@@ -65,3 +94,17 @@ def run_doctor(project_root: Path) -> None:
         print()
         print("Recommended install:")
         print("  brew install poppler tesseract tesseract-lang ffmpeg")
+
+    if shutil.which("tesseract"):
+        languages = _tesseract_languages()
+        print()
+        print("OCR languages:")
+        for language in ["eng", "chi_sim"]:
+            print(f"  ok  {language}" if language in languages else f"  miss {language}")
+
+    if shutil.which("say"):
+        voices = _say_voices()
+        print()
+        print("Speech voices:")
+        default_voice = DEFAULT_MANDARIN_VOICE.split()[0]
+        print(f"  ok  {DEFAULT_MANDARIN_VOICE}" if default_voice in voices else f"  miss {DEFAULT_MANDARIN_VOICE}")
