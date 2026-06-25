@@ -375,6 +375,12 @@ input[type="number"] {
   place-items: center;
 }
 
+.icon-button:disabled,
+.primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .play-icon {
   width: 0;
   height: 0;
@@ -413,6 +419,13 @@ input[type="number"] {
 
 .meter.playing span:nth-child(2n) {
   animation-delay: 120ms;
+}
+
+.audio-note {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
 }
 
 .rating-row {

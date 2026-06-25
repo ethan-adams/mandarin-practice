@@ -97,6 +97,7 @@
             </div>
             <audio id="answerAudio" preload="metadata" src="../lessons/audio/cache/950f4525633740e17fa4de22.mp3"></audio>
           </div>
+          <p class="audio-note" id="audioStatus">Checking local cached answer audio...</p>
 
           <div class="rating-row" aria-label="Rating">
             <button type="button">Again</button>
@@ -144,13 +145,13 @@
           <div class="cache-item">
             <span class="file-dot"></span>
             <div>
-              <strong>950f4525633740e17fa4de22.mp3</strong>
-              <small>17,856 bytes · voice + rate + text hash</small>
+              <strong>Local cache sample</strong>
+              <small>Loaded from ignored lesson audio when available</small>
             </div>
           </div>
           <div class="cache-stats">
-            <div><strong>1</strong><span>cached answer</span></div>
-            <div><strong>0</strong><span>repeat calls</span></div>
+            <div><strong id="cacheCount">...</strong><span>cached answer</span></div>
+            <div><strong>0</strong><span>repo audio files</span></div>
           </div>
         </section>
       </section>

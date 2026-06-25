@@ -80,8 +80,10 @@ make website
 ```
 
 Then open `http://localhost:5173/website/`. The page includes the Edge backend
-setup, Mandarin voice profiles, and the cached audio sample generated under
-`lessons/audio/cache/`.
+setup, Mandarin voice profiles, and a sample player that uses your local
+`lessons/audio/cache/` files when they exist. Lesson audio is intentionally not
+committed, so a fresh clone shows the dashboard and command builder before any
+sample audio is generated.
 
 ## System Shape
 

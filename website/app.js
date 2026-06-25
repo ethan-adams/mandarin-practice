@@ -13,9 +13,12 @@ const limit = document.querySelector("#limit");
 const voiceRotation = document.querySelector("#voiceRotation");
 const fallback = document.querySelector("#fallback");
 const audio = document.querySelector("#answerAudio");
+const audioStatus = document.querySelector("#audioStatus");
+const cacheCount = document.querySelector("#cacheCount");
 const meter = document.querySelector(".meter");
 const playButtons = [document.querySelector("#playAnswer"), document.querySelector("#playHero")];
 const copyCommand = document.querySelector("#copyCommand");
+let sampleAudioReady = false;
 
 function command() {
   const parts = ["uv run"];
@@ -62,6 +65,12 @@ function render() {
 }
 
 async function playAnswer() {
+  if (!sampleAudioReady) {
+    backendStatus.textContent = "No local audio";
+    backendStatus.classList.remove("ready");
+    return;
+  }
+
   try {
     audio.currentTime = 0;
     await audio.play();
@@ -69,6 +78,18 @@ async function playAnswer() {
     backendStatus.textContent = "Audio blocked";
     backendStatus.classList.remove("ready");
   }
+}
+
+function setSampleAudioReady(isReady) {
+  sampleAudioReady = isReady;
+  cacheCount.textContent = isReady ? "1" : "0";
+  audioStatus.textContent = isReady
+    ? "Local cached answer audio is available for this sample."
+    : "Generate Edge audio locally to enable the sample player.";
+  playButtons.forEach((button) => {
+    button.disabled = !isReady;
+    button.setAttribute("aria-disabled", String(!isReady));
+  });
 }
 
 backendButtons.forEach((button) => {
@@ -96,6 +117,8 @@ playButtons.forEach((button) => button.addEventListener("click", playAnswer));
 audio.addEventListener("play", () => meter.classList.add("playing"));
 audio.addEventListener("pause", () => meter.classList.remove("playing"));
 audio.addEventListener("ended", () => meter.classList.remove("playing"));
+audio.addEventListener("loadedmetadata", () => setSampleAudioReady(true), { once: true });
+audio.addEventListener("error", () => setSampleAudioReady(false), { once: true });
 
 copyCommand.addEventListener("click", async () => {
   await navigator.clipboard.writeText(commandText.textContent);
@@ -105,4 +128,5 @@ copyCommand.addEventListener("click", async () => {
   }, 1400);
 });
 
+setSampleAudioReady(false);
 render();
