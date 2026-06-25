@@ -27,11 +27,12 @@ This should be audio-file-first instead of live-TTS-first. Phones are much easie
 
 Goal: make weekly lesson import automatic and reliable.
 
-- Add a `mandarin import-preply` command that can scan a configured downloads folder, iCloud folder, Gmail export folder, or watched directory.
-- Support filename normalization from Preply exports into `Ethan_YYMMDD.pdf`.
-- Store source URL, original filename, imported timestamp, file hash, and lesson date in `lessons/raw/manifest.json`.
-- Add duplicate detection by hash and lesson date.
-- Add a dry-run mode so import rules can be checked without copying files.
+- Done: add a `mandarin import-preply` command that scans a configured local folder.
+- Done: support filename normalization from Preply exports into `Ethan_YYMMDD.pdf`.
+- Done: store source path, original filename, imported timestamp, file hash, and lesson date in `lessons/raw/manifest.json`.
+- Done: add duplicate detection by hash and lesson date.
+- Done: add a dry-run mode so import rules can be checked without copying files.
+- Later: store source URL when an upstream export includes one.
 - Later: add an optional browser/mail integration if Preply does not provide a stable local export path.
 
 ## 2. High-Quality Audio Pipeline
@@ -82,5 +83,5 @@ Goal: give Duolingo-style feedback without letting imperfect recognition block p
 2. Done: add a generated `lessons/audio/sessions/<session-id>/session.json` manifest.
 3. Done: upgrade the website into a mobile session player that consumes that manifest.
 4. Done: add hands-off playback controls: autoplay, response gap duration, repeat answer, and simple rating.
-5. Add Preply auto-import once the lesson-to-session pipeline is stable.
+5. Done: add Preply auto-import once the lesson-to-session pipeline is stable.
 6. Add pronunciation recognition after the phone practice loop is usable without it.

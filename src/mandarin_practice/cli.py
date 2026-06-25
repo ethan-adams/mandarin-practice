@@ -128,6 +128,36 @@ def main() -> None:
         default="Ethan_*.pdf",
         help="Glob pattern for lesson PDFs. Defaults to Ethan_*.pdf.",
     )
+    ingest_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show imports without copying files or updating the manifest.",
+    )
+    ingest_parser.add_argument(
+        "--normalize-preply",
+        action="store_true",
+        help="Infer lesson dates from Preply-style filenames and copy as Ethan_YYMMDD.pdf.",
+    )
+
+    preply_parser = subparsers.add_parser(
+        "import-preply",
+        help="Import Preply lesson PDFs with filename normalization.",
+    )
+    preply_parser.add_argument(
+        "--source",
+        default=str(Path.home() / "Downloads"),
+        help="Folder to scan for Preply lesson PDFs. Defaults to ~/Downloads.",
+    )
+    preply_parser.add_argument(
+        "--pattern",
+        default="*.pdf",
+        help="Glob pattern for Preply PDFs. Defaults to *.pdf.",
+    )
+    preply_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show imports without copying files or updating the manifest.",
+    )
 
     extract_parser = subparsers.add_parser("extract", help="Extract text from imported PDFs.")
     extract_parser.add_argument(
@@ -265,7 +295,19 @@ def main() -> None:
             azure_voice=args.azure_voice,
         )
     elif args.command == "ingest":
-        ingest_lessons(Path(args.source).expanduser(), args.pattern)
+        ingest_lessons(
+            Path(args.source).expanduser(),
+            args.pattern,
+            dry_run=args.dry_run,
+            normalize_preply=args.normalize_preply,
+        )
+    elif args.command == "import-preply":
+        ingest_lessons(
+            Path(args.source).expanduser(),
+            args.pattern,
+            dry_run=args.dry_run,
+            normalize_preply=True,
+        )
     elif args.command == "extract":
         extract_lessons(force=args.force)
     elif args.command == "expand":

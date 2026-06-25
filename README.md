@@ -9,6 +9,7 @@ The repo intentionally does not commit lesson PDFs, extracted text, generated ca
 ```bash
 uv run mandarin doctor
 uv run mandarin ingest --source ~/Downloads
+uv run mandarin import-preply --source ~/Downloads --dry-run
 uv run mandarin extract
 uv run mandarin expand
 uv run mandarin validate
@@ -117,6 +118,7 @@ and [AGENTS.md](AGENTS.md).
 ## System Shape
 
 1. `ingest` copies new `Ethan_*.pdf` files into `lessons/raw/` and records metadata.
+   `import-preply` scans broader PDF downloads, infers lesson dates, and normalizes names like `Ethan_YYMMDD.pdf`.
 2. `extract` turns PDFs into text under `lessons/extracted/`.
 3. Lesson text is reviewed or transformed into structured cards under `lessons/structured/`.
 4. `validate` checks structured cards before practice.
