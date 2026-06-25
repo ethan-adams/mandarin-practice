@@ -4,7 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from mandarin_practice.audio import _audio_cache_path, _edge_rate, _voice_for_card
+from mandarin_practice.audio import _audio_cache_path, _audio_metadata, _edge_rate, _metadata_path, _voice_for_card
+from mandarin_practice.cards import Card
 
 
 class AudioBackendTests(unittest.TestCase):
@@ -45,6 +46,34 @@ class AudioBackendTests(unittest.TestCase):
         self.assertEqual(first_label, "adult female")
         self.assertEqual(second_voice, "zh-CN-YunxiNeural")
         self.assertEqual(second_label, "younger male")
+
+    def test_metadata_path_keeps_audio_suffix_visible(self) -> None:
+        self.assertEqual(_metadata_path(Path("/tmp/answer.mp3")), Path("/tmp/answer.mp3.json"))
+
+    def test_audio_metadata_records_card_backend_and_text_hash(self) -> None:
+        card = Card("Ethan_260624", "How would you say hello?", "你好")
+        with patch("mandarin_practice.audio.PROJECT_ROOT", Path("/tmp/project")):
+            metadata = _audio_metadata(
+                card=card,
+                role="answer",
+                text=card.answer_zh,
+                requested_backend="edge",
+                actual_backend="edge",
+                voice="zh-CN-XiaoxiaoNeural",
+                rate="-10%",
+                audio_path=Path("/tmp/project/lessons/audio/cache/answer.mp3"),
+            )
+
+        self.assertEqual(metadata["version"], 1)
+        self.assertEqual(metadata["card_id"], card.id)
+        self.assertEqual(metadata["lesson_id"], "Ethan_260624")
+        self.assertEqual(metadata["role"], "answer")
+        self.assertEqual(metadata["requested_backend"], "edge")
+        self.assertEqual(metadata["backend"], "edge")
+        self.assertEqual(metadata["voice"], "zh-CN-XiaoxiaoNeural")
+        self.assertEqual(metadata["rate"], "-10%")
+        self.assertEqual(metadata["audio_path"], "lessons/audio/cache/answer.mp3")
+        self.assertEqual(len(metadata["text_hash"]), 64)
 
 
 if __name__ == "__main__":

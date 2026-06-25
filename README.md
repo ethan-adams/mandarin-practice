@@ -31,7 +31,7 @@ uv run mandarin speak
 uv run mandarin stats
 uv run mandarin practice --mode new --limit 20
 uv run mandarin practice --latest
-uv run mandarin practice --lesson Ethan_260620
+uv run mandarin practice --lesson Ethan_260624
 uv run mandarin practice --no-audio
 ```
 
@@ -56,6 +56,18 @@ uv sync --extra edge
 uv run mandarin speak --tts-backend edge
 uv run mandarin speak --tts-backend edge --edge-voice zh-CN-YunxiNeural
 ```
+
+Prebuild high-quality prompt and answer audio for later phone/web sessions:
+
+```bash
+uv run mandarin audio build --latest --limit 10
+uv run mandarin audio build --lesson Ethan_260624 --tts-backend edge
+uv run mandarin audio build --mode review --limit 25 --single-voice
+```
+
+The audio builder caches generated files under `lessons/audio/cache/` and writes
+sidecar metadata next to each audio file. Edge neural TTS is the default backend;
+if Edge is unavailable, the builder falls back to macOS `say`.
 
 By default, `speak` rotates Mandarin voice profiles across answers when macOS
 has multiple Chinese voices installed. Install additional Mandarin voices in
@@ -84,6 +96,11 @@ setup, Mandarin voice profiles, and a sample player that uses your local
 `lessons/audio/cache/` files when they exist. Lesson audio is intentionally not
 committed, so a fresh clone shows the dashboard and command builder before any
 sample audio is generated.
+
+For planned phone practice, Preply import automation, higher-quality audio,
+speed controls, and pronunciation feedback, see [docs/ROADMAP.md](docs/ROADMAP.md).
+For agent-ready implementation slices, see [docs/issue-backlog.md](docs/issue-backlog.md)
+and [AGENTS.md](AGENTS.md).
 
 ## System Shape
 

@@ -5,10 +5,12 @@ from pathlib import Path
 
 from mandarin_practice.audio import (
     DEFAULT_AZURE_MANDARIN_VOICE,
+    DEFAULT_EDGE_ENGLISH_VOICE,
     DEFAULT_EDGE_MANDARIN_VOICE,
     DEFAULT_ENGLISH_VOICE,
     DEFAULT_MANDARIN_VOICE,
     TTS_BACKENDS,
+    build_audio,
     speak_practice,
 )
 from mandarin_practice.cards import validate_lessons
@@ -29,6 +31,29 @@ def main() -> None:
 
     subparsers.add_parser("doctor", help="Check local tools and project folders.")
     subparsers.add_parser("stats", help="Show review progress and due-card counts.")
+
+    audio_parser = subparsers.add_parser("audio", help="Build and inspect generated practice audio.")
+    audio_subparsers = audio_parser.add_subparsers(dest="audio_command", required=True)
+    audio_build_parser = audio_subparsers.add_parser("build", help="Prebuild prompt and answer audio.")
+    audio_build_parser.add_argument("--latest", action="store_true", help="Build audio for only the newest structured lesson.")
+    audio_build_parser.add_argument("--lesson", help="Build audio for a specific lesson id, such as Ethan_260624.")
+    audio_build_parser.add_argument("--limit", type=int, default=0, help="Maximum cards. Defaults to all selected cards.")
+    audio_build_parser.add_argument(
+        "--mode",
+        choices=["all", "review", "new"],
+        default="review",
+        help="Build audio for all cards, due review cards, or never-attempted cards.",
+    )
+    audio_build_parser.add_argument("--tts-backend", choices=TTS_BACKENDS, default="edge", help="Audio backend. Defaults to edge.")
+    audio_build_parser.add_argument("--english-voice", default=DEFAULT_ENGLISH_VOICE, help="macOS voice for prompt fallback audio.")
+    audio_build_parser.add_argument("--mandarin-voice", default=DEFAULT_MANDARIN_VOICE, help="macOS voice for answer fallback audio.")
+    audio_build_parser.add_argument("--edge-english-voice", default=DEFAULT_EDGE_ENGLISH_VOICE, help="Edge neural voice for prompts.")
+    audio_build_parser.add_argument("--edge-voice", default=DEFAULT_EDGE_MANDARIN_VOICE, help="Edge neural voice for Mandarin answers.")
+    audio_build_parser.add_argument("--azure-voice", default=DEFAULT_AZURE_MANDARIN_VOICE, help="Azure neural voice for Mandarin answers.")
+    audio_build_parser.add_argument("--english-rate", type=int, default=170, help="Prompt speech rate.")
+    audio_build_parser.add_argument("--mandarin-rate", type=int, default=150, help="Answer speech rate.")
+    audio_build_parser.add_argument("--single-voice", action="store_true", help="Use only --edge-voice or --mandarin-voice for answers.")
+    audio_build_parser.add_argument("--seed", type=int, help="Shuffle selected cards with a deterministic seed.")
 
     validate_parser = subparsers.add_parser("validate", help="Validate structured lesson JSON.")
     validate_parser.add_argument("--latest", action="store_true", help="Validate only the newest tutor lesson.")
@@ -142,6 +167,24 @@ def main() -> None:
         run_doctor(PROJECT_ROOT)
     elif args.command == "stats":
         stats()
+    elif args.command == "audio":
+        if args.audio_command == "build":
+            build_audio(
+                latest=args.latest,
+                lesson_id=args.lesson,
+                limit=args.limit,
+                mode=args.mode,
+                tts_backend=args.tts_backend,
+                english_voice=args.english_voice,
+                mandarin_voice=args.mandarin_voice,
+                edge_english_voice=args.edge_english_voice,
+                edge_voice=args.edge_voice,
+                azure_voice=args.azure_voice,
+                english_rate=args.english_rate,
+                mandarin_rate=args.mandarin_rate,
+                seed=args.seed,
+                voice_variety=not args.single_voice,
+            )
     elif args.command == "validate":
         lessons, errors = validate_lessons(latest=args.latest, lesson_id=args.lesson)
         for lesson in lessons:
