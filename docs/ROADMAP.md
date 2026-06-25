@@ -4,7 +4,7 @@
 
 - The local CLI workflow can ingest Preply-style lesson PDFs, extract text, validate structured cards, drill due cards, and run spoken call/response sessions.
 - Audio answers can use macOS voices or the optional Edge neural TTS backend, with generated Edge audio cached locally.
-- The static website is currently a local dashboard and command builder. It is not yet a full phone-first practice app.
+- The static website can load a generated local session manifest and run a phone-sized prompt, response gap, answer, and rating loop.
 - Latest imported PDF: `lessons/raw/Ethan_260624.pdf`
 - Latest extracted text: `lessons/extracted/Ethan_260624.txt`
 - Latest structured lesson deck: `lessons/structured/Ethan_260624.json`
@@ -13,12 +13,12 @@ Agent-ready tickets live in [docs/issue-backlog.md](issue-backlog.md). Use promp
 
 ## Near-Term Target
 
-Build a hands-off practice flow that works from a phone:
+Keep improving the hands-off practice flow that works from a phone:
 
-1. Generate a practice session from due cards or the latest lesson.
-2. Prebuild high-quality English prompt and Mandarin answer audio for every card.
-3. Serve a mobile web player from the local machine or a private hosted target.
-4. Let the phone run through prompt, response gap, answer, repeat, and rating with minimal tapping.
+1. Done: generate a practice session from due cards or the latest lesson.
+2. Done: prebuild English prompt and Mandarin answer audio for every card in the session.
+3. Done: serve a mobile web player from the local machine.
+4. Done: let the phone run through prompt, response gap, answer, repeat, and rating with minimal tapping.
 5. Sync ratings back into `lessons/state/review.json`.
 
 This should be audio-file-first instead of live-TTS-first. Phones are much easier to support when the session has ready-to-play files and metadata before practice starts.
@@ -79,8 +79,8 @@ Goal: give Duolingo-style feedback without letting imperfect recognition block p
 ## Suggested Build Order
 
 1. Done: add `mandarin audio build` to pre-generate prompt and answer audio for selected cards.
-2. Next: add a generated `lessons/audio/sessions/<session-id>/session.json` manifest.
-3. Upgrade the website into a mobile session player that consumes that manifest.
-4. Add hands-off playback controls: autoplay, response gap duration, repeat answer, and simple rating.
+2. Done: add a generated `lessons/audio/sessions/<session-id>/session.json` manifest.
+3. Done: upgrade the website into a mobile session player that consumes that manifest.
+4. Done: add hands-off playback controls: autoplay, response gap duration, repeat answer, and simple rating.
 5. Add Preply auto-import once the lesson-to-session pipeline is stable.
 6. Add pronunciation recognition after the phone practice loop is usable without it.

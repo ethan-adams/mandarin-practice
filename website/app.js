@@ -1,132 +1,251 @@
+const manifestUrl = "../lessons/audio/sessions/latest/session.json";
+
 const state = {
-  backend: "edge",
-  voice: "zh-CN-XiaoxiaoNeural",
+  manifest: null,
+  index: 0,
+  phase: "ready",
+  running: false,
+  runId: 0,
+  timer: null,
+  ratings: [],
 };
 
-const backendButtons = [...document.querySelectorAll("[data-backend]")];
-const voiceButtons = [...document.querySelectorAll("[data-voice]")];
-const commandText = document.querySelector("#commandText");
-const backendStatus = document.querySelector("#backendStatus");
-const rate = document.querySelector("#rate");
-const rateValue = document.querySelector("#rateValue");
-const limit = document.querySelector("#limit");
-const voiceRotation = document.querySelector("#voiceRotation");
-const fallback = document.querySelector("#fallback");
-const audio = document.querySelector("#answerAudio");
-const audioStatus = document.querySelector("#audioStatus");
-const cacheCount = document.querySelector("#cacheCount");
-const meter = document.querySelector(".meter");
-const playButtons = [document.querySelector("#playAnswer"), document.querySelector("#playHero")];
-const copyCommand = document.querySelector("#copyCommand");
-let sampleAudioReady = false;
+const els = {
+  status: document.querySelector("#sessionStatus"),
+  progressText: document.querySelector("#progressText"),
+  progressBar: document.querySelector("#progressBar"),
+  phaseLabel: document.querySelector("#phaseLabel"),
+  promptText: document.querySelector("#promptText"),
+  answerBlock: document.querySelector("#answerBlock"),
+  answerText: document.querySelector("#answerText"),
+  pinyinText: document.querySelector("#pinyinText"),
+  notesText: document.querySelector("#notesText"),
+  timerFill: document.querySelector("#timerFill"),
+  startSession: document.querySelector("#startSession"),
+  playPrompt: document.querySelector("#playPrompt"),
+  playAnswer: document.querySelector("#playAnswer"),
+  ratingButtons: [...document.querySelectorAll("[data-rating]")],
+  promptAudio: document.querySelector("#promptAudio"),
+  answerAudio: document.querySelector("#answerAudio"),
+  gapSeconds: document.querySelector("#gapSeconds"),
+  repeatAnswer: document.querySelector("#repeatAnswer"),
+  commandText: document.querySelector("#commandText"),
+  sessionTitle: document.querySelector("#sessionTitle"),
+  sessionFile: document.querySelector("#sessionFile"),
+  downloadRatings: document.querySelector("#downloadRatings"),
+};
 
-function command() {
-  const parts = ["uv run"];
-  if (state.backend === "edge") {
-    parts.push("--extra edge");
-  }
-  parts.push("mandarin speak");
-  parts.push(`--tts-backend ${state.backend}`);
-  parts.push(`--mandarin-rate ${rate.value}`);
-  parts.push(`--limit ${limit.value || 10}`);
-  if (state.backend === "edge" && !voiceRotation.checked) {
-    parts.push(`--edge-voice ${state.voice}`);
-  }
-  if (!voiceRotation.checked) {
-    parts.push("--single-voice");
-  }
-  if (!fallback.checked && state.backend !== "say") {
-    parts.push("# fallback disabled in UI only");
-  }
-  return parts.join(" ");
+function currentCard() {
+  return state.manifest?.cards?.[state.index] || null;
+}
+
+function audioSrc(path) {
+  return path ? `../${path}` : "";
+}
+
+function setStatus(text, ready = false) {
+  els.status.textContent = text;
+  els.status.classList.toggle("ready", ready);
 }
 
 function render() {
-  backendButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.backend === state.backend);
-  });
-  voiceButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.voice === state.voice);
-  });
+  const cards = state.manifest?.cards || [];
+  const card = currentCard();
+  els.progressBar.max = Math.max(cards.length, 1);
+  els.progressBar.value = cards.length ? state.index + 1 : 0;
+  els.progressText.textContent = cards.length ? `${state.index + 1} / ${cards.length}` : "0 / 0";
+  els.startSession.disabled = !cards.length;
+  els.playPrompt.disabled = !card || !card.prompt_audio_path;
+  els.playAnswer.disabled = !card || !card.answer_audio_path;
+  els.downloadRatings.disabled = state.ratings.length === 0;
 
-  rateValue.textContent = rate.value;
-  commandText.textContent = command();
-
-  if (state.backend === "edge") {
-    backendStatus.textContent = "Edge ready";
-    backendStatus.classList.add("ready");
-  } else if (state.backend === "azure") {
-    backendStatus.textContent = "Fallback";
-    backendStatus.classList.remove("ready");
-  } else {
-    backendStatus.textContent = "Local";
-    backendStatus.classList.add("ready");
-  }
-}
-
-async function playAnswer() {
-  if (!sampleAudioReady) {
-    backendStatus.textContent = "No local audio";
-    backendStatus.classList.remove("ready");
+  if (!card) {
+    els.phaseLabel.textContent = "Ready";
+    els.promptText.textContent = "No session loaded.";
+    els.answerBlock.hidden = true;
+    els.timerFill.style.transform = "scaleX(0)";
     return;
   }
 
+  els.phaseLabel.textContent = state.phase;
+  els.promptText.textContent = card.prompt_text;
+  els.answerText.textContent = card.answer_text;
+  els.pinyinText.textContent = card.pinyin || "";
+  els.notesText.textContent = card.notes || "";
+  els.answerBlock.hidden = state.phase !== "answer" && state.phase !== "rating";
+  els.promptAudio.src = audioSrc(card.prompt_audio_path);
+  els.answerAudio.src = audioSrc(card.answer_audio_path);
+}
+
+async function loadManifest(manifest) {
+  if (!manifest || !Array.isArray(manifest.cards)) {
+    throw new Error("Invalid session manifest");
+  }
+  state.manifest = manifest;
+  state.index = 0;
+  state.phase = "ready";
+  state.running = false;
+  state.ratings = [];
+  els.gapSeconds.value = manifest.playback?.response_gap_seconds ?? els.gapSeconds.value;
+  els.repeatAnswer.checked = Boolean(manifest.playback?.repeat_answer);
+  els.sessionTitle.textContent = `${manifest.session_id || "session"}/session.json`;
+  setStatus(`${manifest.cards.length} cards`, true);
+  render();
+}
+
+async function fetchLatestManifest() {
   try {
-    audio.currentTime = 0;
-    await audio.play();
+    const response = await fetch(manifestUrl, { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    await loadManifest(await response.json());
   } catch {
-    backendStatus.textContent = "Audio blocked";
-    backendStatus.classList.remove("ready");
+    setStatus("No session", false);
+    render();
   }
 }
 
-function setSampleAudioReady(isReady) {
-  sampleAudioReady = isReady;
-  cacheCount.textContent = isReady ? "1" : "0";
-  audioStatus.textContent = isReady
-    ? "Local cached answer audio is available for this sample."
-    : "Generate Edge audio locally to enable the sample player.";
-  playButtons.forEach((button) => {
-    button.disabled = !isReady;
-    button.setAttribute("aria-disabled", String(!isReady));
-  });
+function stopTimer() {
+  window.clearInterval(state.timer);
+  state.timer = null;
 }
 
-backendButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    state.backend = button.dataset.backend;
-    render();
+function play(audio) {
+  audio.currentTime = 0;
+  return audio.play();
+}
+
+async function startCard() {
+  const card = currentCard();
+  if (!card) {
+    return;
+  }
+  const runId = state.runId + 1;
+  state.runId = runId;
+  stopTimer();
+  state.phase = "prompt";
+  state.running = true;
+  render();
+  if (card.prompt_audio_path) {
+    await play(els.promptAudio).catch(() => setStatus("Audio blocked", false));
+  }
+  if (runId === state.runId) {
+    startGap(runId);
+  }
+}
+
+function startGap(runId) {
+  state.phase = "response";
+  render();
+  const total = Math.max(Number(els.gapSeconds.value) || 0, 0);
+  const started = Date.now();
+  if (total === 0) {
+    showAnswer(runId);
+    return;
+  }
+  els.timerFill.style.transform = "scaleX(1)";
+  stopTimer();
+  state.timer = window.setInterval(() => {
+    if (runId !== state.runId) {
+      stopTimer();
+      return;
+    }
+    const elapsed = (Date.now() - started) / 1000;
+    const remaining = Math.max(1 - elapsed / total, 0);
+    els.timerFill.style.transform = `scaleX(${remaining})`;
+    if (remaining <= 0) {
+      stopTimer();
+      showAnswer(runId);
+    }
+  }, 100);
+}
+
+async function showAnswer(runId = state.runId + 1) {
+  const card = currentCard();
+  if (!card) {
+    return;
+  }
+  state.runId = runId;
+  state.phase = "answer";
+  els.timerFill.style.transform = "scaleX(0)";
+  render();
+  if (card.answer_audio_path) {
+    await play(els.answerAudio).catch(() => setStatus("Audio blocked", false));
+    if (runId !== state.runId) {
+      return;
+    }
+    if (els.repeatAnswer.checked) {
+      await new Promise((resolve) => window.setTimeout(resolve, 450));
+      if (runId !== state.runId) {
+        return;
+      }
+      await play(els.answerAudio).catch(() => setStatus("Audio blocked", false));
+    }
+  }
+  if (runId !== state.runId) {
+    return;
+  }
+  state.phase = "rating";
+  render();
+}
+
+function rateCard(rating) {
+  const card = currentCard();
+  if (!card) {
+    return;
+  }
+  state.ratings.push({
+    card_id: card.card_id,
+    lesson_id: card.lesson_id,
+    rating,
+    prompt_text: card.prompt_text,
+    answer_text: card.answer_text,
+    rated_at: new Date().toISOString(),
   });
+  state.runId += 1;
+  if (state.index < state.manifest.cards.length - 1) {
+    state.index += 1;
+    startCard();
+    return;
+  }
+  state.phase = "done";
+  state.running = false;
+  setStatus("Complete", true);
+  render();
+}
+
+function downloadRatings() {
+  const payload = {
+    version: 1,
+    session_id: state.manifest?.session_id || "",
+    ratings: state.ratings,
+  };
+  const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${payload.session_id || "session"}-ratings.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+els.startSession.addEventListener("click", startCard);
+els.playPrompt.addEventListener("click", () => play(els.promptAudio));
+els.playAnswer.addEventListener("click", showAnswer);
+els.ratingButtons.forEach((button) => {
+  button.addEventListener("click", () => rateCard(button.dataset.rating));
+});
+els.downloadRatings.addEventListener("click", downloadRatings);
+els.gapSeconds.addEventListener("input", () => {
+  els.commandText.textContent = `uv run --extra edge mandarin session build --latest --limit 10 --response-gap ${els.gapSeconds.value || 0}`;
+});
+els.sessionFile.addEventListener("change", async () => {
+  const file = els.sessionFile.files[0];
+  if (!file) {
+    return;
+  }
+  await loadManifest(JSON.parse(await file.text()));
 });
 
-voiceButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    state.voice = button.dataset.voice;
-    voiceRotation.checked = false;
-    render();
-  });
-});
-
-[rate, limit, voiceRotation, fallback].forEach((input) => {
-  input.addEventListener("input", render);
-  input.addEventListener("change", render);
-});
-
-playButtons.forEach((button) => button.addEventListener("click", playAnswer));
-
-audio.addEventListener("play", () => meter.classList.add("playing"));
-audio.addEventListener("pause", () => meter.classList.remove("playing"));
-audio.addEventListener("ended", () => meter.classList.remove("playing"));
-audio.addEventListener("loadedmetadata", () => setSampleAudioReady(true), { once: true });
-audio.addEventListener("error", () => setSampleAudioReady(false), { once: true });
-
-copyCommand.addEventListener("click", async () => {
-  await navigator.clipboard.writeText(commandText.textContent);
-  copyCommand.textContent = "Copied";
-  setTimeout(() => {
-    copyCommand.textContent = "Copy Edge Command";
-  }, 1400);
-});
-
-setSampleAudioReady(false);
-render();
+fetchLatestManifest();

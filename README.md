@@ -69,6 +69,18 @@ The audio builder caches generated files under `lessons/audio/cache/` and writes
 sidecar metadata next to each audio file. Edge neural TTS is the default backend;
 if Edge is unavailable, the builder falls back to macOS `say`.
 
+Build a phone-friendly hands-off session manifest with prebuilt prompt and
+answer audio:
+
+```bash
+uv run mandarin session build --latest --limit 10
+uv run mandarin session build --mode review --limit 25 --response-gap 7
+```
+
+Session manifests are written under `lessons/audio/sessions/<session-id>/`.
+The default session id is `latest`, so the website can load
+`lessons/audio/sessions/latest/session.json` automatically.
+
 By default, `speak` rotates Mandarin voice profiles across answers when macOS
 has multiple Chinese voices installed. Install additional Mandarin voices in
 System Settings if you want stronger male/female/young/old contrast.
@@ -92,10 +104,10 @@ make website
 ```
 
 Then open `http://localhost:5173/website/`. The page includes the Edge backend
-setup, Mandarin voice profiles, and a sample player that uses your local
-`lessons/audio/cache/` files when they exist. Lesson audio is intentionally not
-committed, so a fresh clone shows the dashboard and command builder before any
-sample audio is generated.
+setup command and a phone-sized session player that uses your local
+`lessons/audio/sessions/latest/session.json` manifest when it exists. Lesson
+audio and session files are intentionally not committed, so a fresh clone still
+opens cleanly before any local session is generated.
 
 For planned phone practice, Preply import automation, higher-quality audio,
 speed controls, and pronunciation feedback, see [docs/ROADMAP.md](docs/ROADMAP.md).
@@ -110,9 +122,10 @@ and [AGENTS.md](AGENTS.md).
 4. `validate` checks structured cards before practice.
 5. `today` runs a due-card call/response loop and updates review history.
 6. `speak` runs audiobook-style voice response practice and records your answers.
-7. `practice` can drill all cards, new cards, a lesson, or the latest lesson.
-8. `expand` creates extra practice from the lesson patterns you have already seen.
-9. Later, `audio` can export prompt/silence/answer practice tracks.
+7. `session build` creates a phone web session manifest plus prompt and answer audio.
+8. `practice` can drill all cards, new cards, a lesson, or the latest lesson.
+9. `expand` creates extra practice from the lesson patterns you have already seen.
+10. Later, `audio` can export prompt/silence/answer practice tracks.
 
 Set `MANDARIN_PRACTICE_HOME=/path/to/project-or-data-root` if you want to run
 the command from another folder while keeping lesson data in this repo.

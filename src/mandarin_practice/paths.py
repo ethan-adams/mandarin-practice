@@ -24,9 +24,10 @@ EXTRACTED_DIR = LESSONS_DIR / "extracted"
 STRUCTURED_DIR = LESSONS_DIR / "structured"
 AUDIO_DIR = LESSONS_DIR / "audio"
 AUDIO_CACHE_DIR = AUDIO_DIR / "cache"
+AUDIO_SESSIONS_DIR = AUDIO_DIR / "sessions"
 STATE_DIR = LESSONS_DIR / "state"
 
 
 def ensure_project_dirs() -> None:
-    for path in [RAW_DIR, EXTRACTED_DIR, STRUCTURED_DIR, AUDIO_DIR, AUDIO_CACHE_DIR, STATE_DIR]:
+    for path in [RAW_DIR, EXTRACTED_DIR, STRUCTURED_DIR, AUDIO_DIR, AUDIO_CACHE_DIR, AUDIO_SESSIONS_DIR, STATE_DIR]:
         path.mkdir(parents=True, exist_ok=True)

@@ -80,6 +80,7 @@ def run_doctor(project_root: Path) -> None:
         "lessons/structured",
         "lessons/audio",
         "lessons/audio/cache",
+        "lessons/audio/sessions",
         "lessons/state",
     ]:
         path = project_root / folder

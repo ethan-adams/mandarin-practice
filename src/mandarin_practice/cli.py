@@ -20,6 +20,7 @@ from mandarin_practice.extract import extract_lessons
 from mandarin_practice.ingest import ingest_lessons
 from mandarin_practice.paths import PROJECT_ROOT
 from mandarin_practice.practice import practice, stats
+from mandarin_practice.session import DEFAULT_RESPONSE_GAP_SECONDS, DEFAULT_SESSION_ID, build_session
 
 
 def main() -> None:
@@ -54,6 +55,35 @@ def main() -> None:
     audio_build_parser.add_argument("--mandarin-rate", type=int, default=150, help="Answer speech rate.")
     audio_build_parser.add_argument("--single-voice", action="store_true", help="Use only --edge-voice or --mandarin-voice for answers.")
     audio_build_parser.add_argument("--seed", type=int, help="Shuffle selected cards with a deterministic seed.")
+
+    session_parser = subparsers.add_parser("session", help="Build phone-friendly practice sessions.")
+    session_subparsers = session_parser.add_subparsers(dest="session_command", required=True)
+    session_build_parser = session_subparsers.add_parser("build", help="Build a session manifest and required audio.")
+    session_build_parser.add_argument("--latest", action="store_true", help="Build a session for only the newest structured lesson.")
+    session_build_parser.add_argument("--lesson", help="Build a session for a specific lesson id, such as Ethan_260624.")
+    session_build_parser.add_argument("--limit", type=int, default=10, help="Maximum cards. Defaults to 10.")
+    session_build_parser.add_argument(
+        "--mode",
+        choices=["all", "review", "new"],
+        default="review",
+        help="Build a session from all cards, due review cards, or never-attempted cards.",
+    )
+    session_build_parser.add_argument("--session-id", default=DEFAULT_SESSION_ID, help="Folder name under lessons/audio/sessions/.")
+    session_build_parser.add_argument(
+        "--response-gap",
+        type=int,
+        default=DEFAULT_RESPONSE_GAP_SECONDS,
+        help="Seconds between prompt and answer playback.",
+    )
+    session_build_parser.add_argument("--tts-backend", choices=TTS_BACKENDS, default="edge", help="Audio backend. Defaults to edge.")
+    session_build_parser.add_argument("--english-voice", default=DEFAULT_ENGLISH_VOICE, help="macOS voice for prompt fallback audio.")
+    session_build_parser.add_argument("--mandarin-voice", default=DEFAULT_MANDARIN_VOICE, help="macOS voice for answer fallback audio.")
+    session_build_parser.add_argument("--edge-english-voice", default=DEFAULT_EDGE_ENGLISH_VOICE, help="Edge neural voice for prompts.")
+    session_build_parser.add_argument("--edge-voice", default=DEFAULT_EDGE_MANDARIN_VOICE, help="Edge neural voice for Mandarin answers.")
+    session_build_parser.add_argument("--english-rate", type=int, default=170, help="Prompt speech rate.")
+    session_build_parser.add_argument("--mandarin-rate", type=int, default=150, help="Answer speech rate.")
+    session_build_parser.add_argument("--single-voice", action="store_true", help="Use only --edge-voice or --mandarin-voice for answers.")
+    session_build_parser.add_argument("--seed", type=int, help="Shuffle selected cards with a deterministic seed.")
 
     validate_parser = subparsers.add_parser("validate", help="Validate structured lesson JSON.")
     validate_parser.add_argument("--latest", action="store_true", help="Validate only the newest tutor lesson.")
@@ -180,6 +210,25 @@ def main() -> None:
                 edge_english_voice=args.edge_english_voice,
                 edge_voice=args.edge_voice,
                 azure_voice=args.azure_voice,
+                english_rate=args.english_rate,
+                mandarin_rate=args.mandarin_rate,
+                seed=args.seed,
+                voice_variety=not args.single_voice,
+            )
+    elif args.command == "session":
+        if args.session_command == "build":
+            build_session(
+                latest=args.latest,
+                lesson_id=args.lesson,
+                limit=args.limit,
+                mode=args.mode,
+                session_id=args.session_id,
+                response_gap_seconds=args.response_gap,
+                tts_backend=args.tts_backend,
+                english_voice=args.english_voice,
+                mandarin_voice=args.mandarin_voice,
+                edge_english_voice=args.edge_english_voice,
+                edge_voice=args.edge_voice,
                 english_rate=args.english_rate,
                 mandarin_rate=args.mandarin_rate,
                 seed=args.seed,
