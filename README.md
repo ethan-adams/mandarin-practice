@@ -51,7 +51,25 @@ Useful voice options:
 uv run mandarin speak --mandarin-voice "Sandy (Chinese (China mainland))"
 uv run mandarin speak --mandarin-voice "Tingting (Chinese (China mainland))"
 uv run mandarin speak --seconds 7 --no-replay
+uv run mandarin speak --single-voice
+uv sync --extra edge
+uv run mandarin speak --tts-backend edge
+uv run mandarin speak --tts-backend edge --edge-voice zh-CN-YunxiNeural
 ```
+
+By default, `speak` rotates Mandarin voice profiles across answers when macOS
+has multiple Chinese voices installed. Install additional Mandarin voices in
+System Settings if you want stronger male/female/young/old contrast.
+
+For the biggest free audio upgrade, install the optional Edge backend with
+`uv sync --extra edge` and run `speak --tts-backend edge`. Edge audio is
+generated once and cached under `lessons/audio/cache/` by voice, rate, and text,
+then reused on later cards. If Edge TTS is unavailable or fails, the CLI falls
+back to macOS `say`.
+
+The `--tts-backend azure` option is reserved for the official Azure Speech path.
+Until Azure credentials and quota handling are added, it reports the missing
+configuration and falls back to `say`.
 
 ## System Shape
 
@@ -78,6 +96,7 @@ brew install poppler tesseract tesseract-lang ffmpeg
 - `tesseract` + `tesseract-lang`: OCR for scanned/image-only lesson PDFs
 - `ffmpeg`: later MP3/audio assembly
 - macOS `say`: local text-to-speech; already available on macOS
+- Optional `edge-tts`: Microsoft Edge online neural voices, no API key
 
 ## Card Format
 
@@ -91,12 +110,15 @@ Structured lesson files live at `lessons/structured/Ethan_YYMMDD.json`:
     {
       "prompt_en": "How would you say: I want to go tomorrow?",
       "answer_zh": "我明天想去。",
-      "pinyin": "wo3 ming2 tian1 xiang3 qu4.",
+      "pinyin": "wǒ míng tiān xiǎng qù.",
       "notes": "Optional grammar or usage note."
     }
   ]
 }
 ```
+
+Numbered pinyin such as `wo3 ming2 tian1` is still accepted for older lesson
+files. Practice output renders it with tone marks.
 
 ## Near-Term Milestones
 

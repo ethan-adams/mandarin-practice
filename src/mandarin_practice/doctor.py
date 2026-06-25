@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+from importlib.util import find_spec
 from pathlib import Path
 
-from mandarin_practice.audio import DEFAULT_MANDARIN_VOICE
+from mandarin_practice.audio import DEFAULT_EDGE_MANDARIN_VOICE, DEFAULT_MANDARIN_VOICE
 from mandarin_practice.paths import ensure_project_dirs
 
 
@@ -73,7 +74,14 @@ def run_doctor(project_root: Path) -> None:
     print(f"Project: {project_root}")
     print()
     print("Folders:")
-    for folder in ["lessons/raw", "lessons/extracted", "lessons/structured", "lessons/audio", "lessons/state"]:
+    for folder in [
+        "lessons/raw",
+        "lessons/extracted",
+        "lessons/structured",
+        "lessons/audio",
+        "lessons/audio/cache",
+        "lessons/state",
+    ]:
         path = project_root / folder
         print(f"  ok  {folder}" if path.exists() else f"  miss {folder}")
 
@@ -108,3 +116,13 @@ def run_doctor(project_root: Path) -> None:
         print("Speech voices:")
         default_voice = DEFAULT_MANDARIN_VOICE.split()[0]
         print(f"  ok  {DEFAULT_MANDARIN_VOICE}" if default_voice in voices else f"  miss {DEFAULT_MANDARIN_VOICE}")
+        chinese_voices = sorted(voice for voice in voices if voice in {"Sandy", "Tingting", "Mei-Jia", "Sinji", "Yue"})
+        if chinese_voices:
+            print(f"  ok  Chinese macOS voices: {', '.join(chinese_voices)}")
+        else:
+            print("  info Install enhanced Chinese voices in System Settings -> Accessibility -> Read & Speak.")
+
+    print()
+    print("Optional TTS backends:")
+    print(f"  ok  edge-tts ({DEFAULT_EDGE_MANDARIN_VOICE})" if find_spec("edge_tts") else "  miss edge-tts: uv sync --extra edge")
+    print("  info Azure Speech requires Azure setup and keys; this CLI currently falls back to say.")

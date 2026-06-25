@@ -19,6 +19,7 @@ class ExpandedPracticeTests(unittest.TestCase):
         self.assertEqual(len(cards), len(pairs))
         self.assertTrue(cards)
         self.assertTrue(all(card["generated"] for card in cards))
+        self.assertTrue(all(not any(char.isdigit() for char in card["pinyin"]) for card in cards))
 
 
 if __name__ == "__main__":

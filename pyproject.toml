@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = []
 
+[project.optional-dependencies]
+edge = ["edge-tts>=7.0.0"]
+
 [project.scripts]
 mandarin = "mandarin_practice.cli:main"
 

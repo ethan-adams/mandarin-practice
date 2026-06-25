@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mandarin_practice.paths import STRUCTURED_DIR, ensure_project_dirs
+from mandarin_practice.pinyin import numbered_to_accented_pinyin
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,10 @@ class Card:
     def id(self) -> str:
         source = "\n".join([self.lesson_id, self.prompt_en, self.answer_zh])
         return hashlib.sha256(source.encode("utf-8")).hexdigest()[:16]
+
+    @property
+    def display_pinyin(self) -> str:
+        return numbered_to_accented_pinyin(self.pinyin)
 
 
 @dataclass(frozen=True)

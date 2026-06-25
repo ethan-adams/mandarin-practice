@@ -5,6 +5,7 @@ import random
 from pathlib import Path
 
 from mandarin_practice.paths import STRUCTURED_DIR, ensure_project_dirs
+from mandarin_practice.pinyin import numbered_to_accented_pinyin
 
 
 DEFAULT_OUTPUT = "Review_expanded.json"
@@ -85,7 +86,7 @@ def _card(prompt: str, answer: str, pinyin: str, notes: str = "") -> dict:
     card = {
         "prompt_en": prompt,
         "answer_zh": answer,
-        "pinyin": pinyin,
+        "pinyin": numbered_to_accented_pinyin(pinyin),
         "generated": True,
     }
     if notes:

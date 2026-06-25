@@ -164,7 +164,7 @@ def practice(
         input("Press return for the answer...")
         print(card.answer_zh)
         if card.pinyin:
-            print(card.pinyin)
+            print(card.display_pinyin)
         if card.notes:
             print(card.notes)
         _say(card.answer_zh, audio=audio)

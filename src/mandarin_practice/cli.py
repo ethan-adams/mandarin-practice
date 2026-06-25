@@ -3,7 +3,14 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from mandarin_practice.audio import DEFAULT_ENGLISH_VOICE, DEFAULT_MANDARIN_VOICE, speak_practice
+from mandarin_practice.audio import (
+    DEFAULT_AZURE_MANDARIN_VOICE,
+    DEFAULT_EDGE_MANDARIN_VOICE,
+    DEFAULT_ENGLISH_VOICE,
+    DEFAULT_MANDARIN_VOICE,
+    TTS_BACKENDS,
+    speak_practice,
+)
 from mandarin_practice.cards import validate_lessons
 from mandarin_practice.doctor import run_doctor
 from mandarin_practice.expand import DEFAULT_OUTPUT, expand_practice
@@ -45,10 +52,14 @@ def main() -> None:
     speak_parser.add_argument("--seconds", type=int, default=5, help="Seconds to record each response.")
     speak_parser.add_argument("--english-voice", default=DEFAULT_ENGLISH_VOICE, help="macOS voice for prompts.")
     speak_parser.add_argument("--mandarin-voice", default=DEFAULT_MANDARIN_VOICE, help="macOS voice for answers.")
+    speak_parser.add_argument("--tts-backend", choices=TTS_BACKENDS, default="say", help="Answer TTS backend. Defaults to say.")
+    speak_parser.add_argument("--edge-voice", default=DEFAULT_EDGE_MANDARIN_VOICE, help="Edge neural voice for answers.")
+    speak_parser.add_argument("--azure-voice", default=DEFAULT_AZURE_MANDARIN_VOICE, help="Azure neural voice for answers.")
     speak_parser.add_argument("--english-rate", type=int, default=170, help="Prompt speech rate.")
     speak_parser.add_argument("--mandarin-rate", type=int, default=150, help="Answer speech rate.")
     speak_parser.add_argument("--input-device", default="0", help="ffmpeg avfoundation audio device index. Defaults to 0.")
     speak_parser.add_argument("--no-replay", action="store_true", help="Do not replay your recorded response.")
+    speak_parser.add_argument("--single-voice", action="store_true", help="Use only --mandarin-voice instead of rotating voice profiles.")
     speak_parser.add_argument("--seed", type=int, help="Shuffle cards with a deterministic seed.")
 
     ingest_parser = subparsers.add_parser("ingest", help="Import Ethan_*.pdf lesson files.")
@@ -156,6 +167,10 @@ def main() -> None:
             input_device=args.input_device,
             replay=not args.no_replay,
             seed=args.seed,
+            voice_variety=not args.single_voice,
+            tts_backend=args.tts_backend,
+            edge_voice=args.edge_voice,
+            azure_voice=args.azure_voice,
         )
     elif args.command == "ingest":
         ingest_lessons(Path(args.source).expanduser(), args.pattern)
