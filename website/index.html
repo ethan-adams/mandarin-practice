@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mandarin Practice</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero" aria-label="Mandarin audio practice">
+        <img src="./assets/mandarin-audio-workspace.png" alt="" class="hero-image">
+        <div class="hero-shade"></div>
+        <div class="hero-content">
+          <p class="eyebrow">Local Mandarin Practice</p>
+          <h1>Neural answer audio, cached for fast review.</h1>
+          <div class="hero-actions" aria-label="Primary commands">
+            <button class="primary" id="playHero" type="button">Play Cached Answer</button>
+            <button class="secondary" id="copyCommand" type="button">Copy Edge Command</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Practice setup">
+        <aside class="panel session-panel">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Session</p>
+              <h2>Speak Practice</h2>
+            </div>
+            <span class="status ready" id="backendStatus">Edge ready</span>
+          </div>
+
+          <div class="control-group">
+            <label>TTS Backend</label>
+            <div class="segmented" role="tablist" aria-label="TTS backend">
+              <button class="segment" data-backend="say" type="button">say</button>
+              <button class="segment active" data-backend="edge" type="button">edge</button>
+              <button class="segment" data-backend="azure" type="button">azure</button>
+            </div>
+          </div>
+
+          <div class="control-grid">
+            <label>
+              <span>Mandarin rate</span>
+              <input id="rate" type="range" min="100" max="180" value="140">
+              <strong id="rateValue">140</strong>
+            </label>
+            <label>
+              <span>Cards</span>
+              <input id="limit" type="number" min="1" max="50" value="10">
+            </label>
+          </div>
+
+          <div class="switch-row">
+            <label class="switch">
+              <input id="voiceRotation" type="checkbox" checked>
+              <span></span>
+              Rotate voices
+            </label>
+            <label class="switch">
+              <input id="fallback" type="checkbox" checked>
+              <span></span>
+              say fallback
+            </label>
+          </div>
+
+          <div class="command-box">
+            <code id="commandText">uv run --extra edge mandarin speak --tts-backend edge --mandarin-rate 140 --limit 10</code>
+          </div>
+        </aside>
+
+        <section class="panel practice-panel" aria-label="Current card">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Current Card</p>
+              <h2>Call and Response</h2>
+            </div>
+            <span class="status">Review</span>
+          </div>
+
+          <div class="prompt-card">
+            <p class="prompt-kicker">Prompt</p>
+            <p class="prompt">How would you say: I am practicing Chinese today?</p>
+            <div class="answer">
+              <span lang="zh-Hans">我今天在练习中文。</span>
+              <small>wǒ jīn tiān zài liàn xí zhōng wén.</small>
+            </div>
+          </div>
+
+          <div class="audio-row">
+            <button class="icon-button" id="playAnswer" type="button" aria-label="Play answer">
+              <span class="play-icon"></span>
+            </button>
+            <div class="meter" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <audio id="answerAudio" preload="metadata" src="../lessons/audio/cache/950f4525633740e17fa4de22.mp3"></audio>
+          </div>
+
+          <div class="rating-row" aria-label="Rating">
+            <button type="button">Again</button>
+            <button type="button">Hard</button>
+            <button type="button" class="selected">Good</button>
+          </div>
+        </section>
+
+        <section class="panel voice-panel" aria-label="Voice profiles">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Voices</p>
+              <h2>Mandarin Profiles</h2>
+            </div>
+          </div>
+
+          <div class="voice-list">
+            <button class="voice active" data-voice="zh-CN-XiaoxiaoNeural" type="button">
+              <span>Adult female</span>
+              <strong>zh-CN-XiaoxiaoNeural</strong>
+            </button>
+            <button class="voice" data-voice="zh-CN-YunxiNeural" type="button">
+              <span>Younger male</span>
+              <strong>zh-CN-YunxiNeural</strong>
+            </button>
+            <button class="voice" data-voice="zh-CN-YunjianNeural" type="button">
+              <span>Adult male</span>
+              <strong>zh-CN-YunjianNeural</strong>
+            </button>
+            <button class="voice" data-voice="zh-CN-XiaoyiNeural" type="button">
+              <span>Younger female</span>
+              <strong>zh-CN-XiaoyiNeural</strong>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel cache-panel" aria-label="Audio cache">
+          <div class="panel-header">
+            <div>
+              <p class="section-label">Cache</p>
+              <h2>Generated Audio</h2>
+            </div>
+            <span class="status ready">Reused</span>
+          </div>
+          <div class="cache-item">
+            <span class="file-dot"></span>
+            <div>
+              <strong>950f4525633740e17fa4de22.mp3</strong>
+              <small>17,856 bytes · voice + rate + text hash</small>
+            </div>
+          </div>
+          <div class="cache-stats">
+            <div><strong>1</strong><span>cached answer</span></div>
+            <div><strong>0</strong><span>repeat calls</span></div>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>

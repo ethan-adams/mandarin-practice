@@ -1,4 +1,4 @@
-.PHONY: doctor ingest extract expand validate today stats practice speak test
+.PHONY: doctor ingest extract expand validate today stats practice speak website test
 
 doctor:
 	uv run mandarin doctor
@@ -20,6 +20,9 @@ today:
 
 speak:
 	uv run mandarin speak
+
+website:
+	python3 -m http.server 5173
 
 stats:
 	uv run mandarin stats

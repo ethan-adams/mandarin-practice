@@ -71,6 +71,18 @@ The `--tts-backend azure` option is reserved for the official Azure Speech path.
 Until Azure credentials and quota handling are added, it reports the missing
 configuration and falls back to `say`.
 
+## Local Website
+
+Run the static practice dashboard from the repo root:
+
+```bash
+make website
+```
+
+Then open `http://localhost:5173/website/`. The page includes the Edge backend
+setup, Mandarin voice profiles, and the cached audio sample generated under
+`lessons/audio/cache/`.
+
 ## System Shape
 
 1. `ingest` copies new `Ethan_*.pdf` files into `lessons/raw/` and records metadata.
