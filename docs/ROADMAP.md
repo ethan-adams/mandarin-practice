@@ -4,7 +4,7 @@
 
 - The local CLI workflow can ingest Preply-style lesson PDFs, extract text, validate structured cards, drill due cards, and run spoken call/response sessions.
 - Audio answers can use macOS voices or the optional Edge neural TTS backend, with generated Edge audio cached locally.
-- The static website can load a generated local session manifest and run a phone-sized prompt, response gap, answer, and rating loop.
+- The static website can load a generated local session manifest and run a phone-sized prompt, response gap, answer, speed selection, and rating loop.
 - Latest imported PDF: `lessons/raw/Ethan_260624.pdf`
 - Latest extracted text: `lessons/extracted/Ethan_260624.txt`
 - Latest structured lesson deck: `lessons/structured/Ethan_260624.json`
@@ -60,9 +60,9 @@ Goal: make premium audio the default output path, not an afterthought.
 
 Goal: make slower listening a first-class control across CLI, audio export, and mobile web.
 
-- Keep `--mandarin-rate` and `--english-rate` in the CLI, but expose named presets: slow, normal, fast.
-- Prebuild at least two Mandarin speeds per answer, for example normal and slow.
-- Add a mobile web speed control that switches between prebuilt slow/normal files instead of relying only on browser playback speed.
+- Done: keep `--mandarin-rate` and `--english-rate` in the CLI, but expose named presets: slow, normal, fast.
+- Done: prebuild at least two Mandarin speeds per answer, normal and slow.
+- Done: add a mobile web speed control that switches between prebuilt slow/normal files instead of relying only on browser playback speed.
 - For generated session MP3s, include optional slow-answer repeats after the normal answer.
 - Track preferred speed in local settings so practice sessions default to the last useful pace.
 
@@ -84,4 +84,5 @@ Goal: give Duolingo-style feedback without letting imperfect recognition block p
 3. Done: upgrade the website into a mobile session player that consumes that manifest.
 4. Done: add hands-off playback controls: autoplay, response gap duration, repeat answer, and simple rating.
 5. Done: add Preply auto-import once the lesson-to-session pipeline is stable.
-6. Add pronunciation recognition after the phone practice loop is usable without it.
+6. Done: add slow/normal speed controls for generated sessions and the phone player.
+7. Add pronunciation recognition after the phone practice loop is usable without it.

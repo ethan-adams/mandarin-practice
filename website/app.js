@@ -28,6 +28,7 @@ const els = {
   promptAudio: document.querySelector("#promptAudio"),
   answerAudio: document.querySelector("#answerAudio"),
   gapSeconds: document.querySelector("#gapSeconds"),
+  speedPreset: document.querySelector("#speedPreset"),
   repeatAnswer: document.querySelector("#repeatAnswer"),
   commandText: document.querySelector("#commandText"),
   sessionTitle: document.querySelector("#sessionTitle"),
@@ -43,6 +44,14 @@ function audioSrc(path) {
   return path ? `../${path}` : "";
 }
 
+function answerAudioPath(card) {
+  if (!card) {
+    return "";
+  }
+  const speed = els.speedPreset.value || "normal";
+  return card.answer_audio_variants?.[speed] || card.answer_audio_path || "";
+}
+
 function setStatus(text, ready = false) {
   els.status.textContent = text;
   els.status.classList.toggle("ready", ready);
@@ -56,7 +65,7 @@ function render() {
   els.progressText.textContent = cards.length ? `${state.index + 1} / ${cards.length}` : "0 / 0";
   els.startSession.disabled = !cards.length;
   els.playPrompt.disabled = !card || !card.prompt_audio_path;
-  els.playAnswer.disabled = !card || !card.answer_audio_path;
+  els.playAnswer.disabled = !card || !answerAudioPath(card);
   els.downloadRatings.disabled = state.ratings.length === 0;
 
   if (!card) {
@@ -74,7 +83,7 @@ function render() {
   els.notesText.textContent = card.notes || "";
   els.answerBlock.hidden = state.phase !== "answer" && state.phase !== "rating";
   els.promptAudio.src = audioSrc(card.prompt_audio_path);
-  els.answerAudio.src = audioSrc(card.answer_audio_path);
+  els.answerAudio.src = audioSrc(answerAudioPath(card));
 }
 
 async function loadManifest(manifest) {
@@ -88,7 +97,20 @@ async function loadManifest(manifest) {
   state.ratings = [];
   els.gapSeconds.value = manifest.playback?.response_gap_seconds ?? els.gapSeconds.value;
   els.repeatAnswer.checked = Boolean(manifest.playback?.repeat_answer);
+  const answerSpeeds = manifest.audio?.answer_speed_presets || [];
+  const preferredSpeed = manifest.audio?.speed_preset || "normal";
+  if (answerSpeeds.length) {
+    els.speedPreset.innerHTML = "";
+    answerSpeeds.forEach((speed) => {
+      const option = document.createElement("option");
+      option.value = speed;
+      option.textContent = speed.charAt(0).toUpperCase() + speed.slice(1);
+      els.speedPreset.append(option);
+    });
+  }
+  els.speedPreset.value = answerSpeeds.includes(preferredSpeed) ? preferredSpeed : "normal";
   els.sessionTitle.textContent = `${manifest.session_id || "session"}/session.json`;
+  updateCommand();
   setStatus(`${manifest.cards.length} cards`, true);
   render();
 }
@@ -238,8 +260,15 @@ els.ratingButtons.forEach((button) => {
 });
 els.downloadRatings.addEventListener("click", downloadRatings);
 els.gapSeconds.addEventListener("input", () => {
-  els.commandText.textContent = `uv run --extra edge mandarin session build --latest --limit 10 --response-gap ${els.gapSeconds.value || 0}`;
+  updateCommand();
 });
+els.speedPreset.addEventListener("change", () => {
+  render();
+  updateCommand();
+});
+function updateCommand() {
+  els.commandText.textContent = `uv run --extra edge mandarin session build --latest --limit 10 --speed ${els.speedPreset.value || "normal"} --response-gap ${els.gapSeconds.value || 0}`;
+}
 els.sessionFile.addEventListener("change", async () => {
   const file = els.sessionFile.files[0];
   if (!file) {
@@ -248,4 +277,5 @@ els.sessionFile.addEventListener("change", async () => {
   await loadManifest(JSON.parse(await file.text()));
 });
 
+updateCommand();
 fetchLatestManifest();

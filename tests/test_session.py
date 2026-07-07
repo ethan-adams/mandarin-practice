@@ -77,11 +77,13 @@ class SessionBuildTests(unittest.TestCase):
             manifest = json.loads((sessions / "test" / "session.json").read_text(encoding="utf-8"))
 
         self.assertEqual(stats.cards, 1)
-        self.assertEqual(stats.reused, 2)
+        self.assertEqual(stats.reused, 3)
         self.assertEqual(manifest["version"], 1)
         self.assertEqual(manifest["session_id"], "test")
         self.assertEqual(manifest["selection"]["seed"], 123)
         self.assertEqual(manifest["playback"]["response_gap_seconds"], 5)
+        self.assertEqual(manifest["audio"]["speed_preset"], "normal")
+        self.assertEqual(manifest["audio"]["answer_speed_presets"], ["normal", "slow"])
         self.assertEqual(len(manifest["cards"]), 1)
         card = manifest["cards"][0]
         self.assertEqual(card["lesson_id"], "Ethan_260624")
@@ -90,6 +92,10 @@ class SessionBuildTests(unittest.TestCase):
         self.assertEqual(card["pinyin"], "wǒ hē chá.")
         self.assertEqual(card["prompt_audio_path"], "lessons/audio/cache/prompt.mp3")
         self.assertEqual(card["answer_audio_path"], "lessons/audio/cache/answer.mp3")
+        self.assertEqual(
+            card["answer_audio_variants"],
+            {"normal": "lessons/audio/cache/answer.mp3", "slow": "lessons/audio/cache/answer.mp3"},
+        )
         self.assertEqual(card["rating_state"]["attempts"], 0)
 
 

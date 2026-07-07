@@ -4,7 +4,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from mandarin_practice.audio import _audio_cache_path, _audio_metadata, _edge_rate, _metadata_path, _voice_for_card
+from mandarin_practice.audio import (
+    _audio_cache_path,
+    _audio_metadata,
+    _edge_rate,
+    _metadata_path,
+    _resolve_rates,
+    _voice_for_card,
+)
 from mandarin_practice.cards import Card
 
 
@@ -25,6 +32,11 @@ class AudioBackendTests(unittest.TestCase):
         self.assertEqual(_edge_rate(150), "-10%")
         self.assertEqual(_edge_rate(180), "+10%")
         self.assertEqual(_edge_rate(60), "-50%")
+
+    def test_speed_presets_resolve_to_rates_with_numeric_overrides(self) -> None:
+        self.assertEqual(_resolve_rates("slow"), (150, 115))
+        self.assertEqual(_resolve_rates("normal", mandarin_rate=135), (170, 135))
+        self.assertEqual(_resolve_rates("fast", english_rate=175), (175, 180))
 
     def test_edge_voice_profiles_rotate_neural_voices(self) -> None:
         first_voice, first_label, _ = _voice_for_card(

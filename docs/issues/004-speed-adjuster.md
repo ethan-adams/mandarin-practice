@@ -1,5 +1,7 @@
 # Issue 4: Add Slow/Normal Speed Controls Across Practice Modes
 
+Status: implemented in `chore/2-preply-import`.
+
 ## Goal
 
 Let practice sessions use slower Mandarin audio without changing code or regenerating everything manually.
@@ -44,3 +46,19 @@ make website
 ```
 
 Verify the website at desktop and phone widths if website controls change.
+
+Implemented command examples:
+
+```bash
+uv run mandarin speak --speed slow
+uv run mandarin audio build --latest --limit 10 --speed normal
+uv run mandarin session build --latest --limit 10 --speed slow
+uv run mandarin session build --latest --limit 10 --mandarin-rate 130
+```
+
+Current output shape:
+
+- Speed presets are `slow`, `normal`, and `fast`.
+- Direct numeric `--english-rate` and `--mandarin-rate` options still override the selected preset.
+- Session manifests include `answer_audio_variants` with prebuilt normal and slow Mandarin answer audio.
+- The static website can switch between available answer audio variants and still works when no local session has been generated.

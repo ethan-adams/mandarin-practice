@@ -21,6 +21,14 @@ DEFAULT_EDGE_MANDARIN_VOICE = "zh-CN-XiaoxiaoNeural"
 DEFAULT_AZURE_MANDARIN_VOICE = DEFAULT_EDGE_MANDARIN_VOICE
 DEFAULT_RECORD_SECONDS = 5
 TTS_BACKENDS = ("say", "edge", "azure")
+SPEED_PRESETS = {
+    "slow": {"english_rate": 150, "mandarin_rate": 115},
+    "normal": {"english_rate": 170, "mandarin_rate": 150},
+    "fast": {"english_rate": 190, "mandarin_rate": 180},
+}
+SPEED_PRESET_NAMES = tuple(SPEED_PRESETS)
+DEFAULT_SPEED_PRESET = "normal"
+MANDARIN_AUDIO_SPEEDS = ("normal", "slow")
 
 
 @dataclass(frozen=True)
@@ -119,6 +127,21 @@ def _edge_rate(rate: int) -> str:
     return f"{percent:+d}%"
 
 
+def _rates_for_speed_preset(speed_preset: str) -> dict[str, int]:
+    if speed_preset not in SPEED_PRESETS:
+        raise ValueError(f"Unknown speed preset: {speed_preset}")
+    return dict(SPEED_PRESETS[speed_preset])
+
+
+def _resolve_rates(
+    speed_preset: str = DEFAULT_SPEED_PRESET,
+    english_rate: int | None = None,
+    mandarin_rate: int | None = None,
+) -> tuple[int, int]:
+    rates = _rates_for_speed_preset(speed_preset)
+    return english_rate or rates["english_rate"], mandarin_rate or rates["mandarin_rate"]
+
+
 def _audio_cache_path(backend: str, voice: str, rate: str | int, text: str, suffix: str) -> Path:
     payload = {
         "backend": backend,
@@ -169,6 +192,13 @@ def _audio_metadata(
         "audio_path": _relative_path(audio_path),
         "generated_at": datetime.now().isoformat(timespec="seconds"),
     }
+
+
+def _audio_metadata_with_speed(metadata: dict, speed_preset: str | None) -> dict:
+    if speed_preset:
+        metadata = dict(metadata)
+        metadata["speed_preset"] = speed_preset
+    return metadata
 
 
 def _write_audio_metadata(path: Path, metadata: dict) -> None:
@@ -251,14 +281,16 @@ def build_audio(
     edge_english_voice: str = DEFAULT_EDGE_ENGLISH_VOICE,
     edge_voice: str = DEFAULT_EDGE_MANDARIN_VOICE,
     azure_voice: str = DEFAULT_AZURE_MANDARIN_VOICE,
-    english_rate: int = 170,
-    mandarin_rate: int = 150,
+    speed_preset: str = DEFAULT_SPEED_PRESET,
+    english_rate: int | None = None,
+    mandarin_rate: int | None = None,
     seed: int | None = None,
     voice_variety: bool = True,
 ) -> AudioBuildStats:
     ensure_project_dirs()
     if tts_backend not in TTS_BACKENDS:
         raise ValueError(f"Unknown TTS backend: {tts_backend}")
+    english_rate, mandarin_rate = _resolve_rates(speed_preset, english_rate, mandarin_rate)
 
     lessons, errors = validate_lessons(latest=latest, lesson_id=lesson_id)
     if errors:
@@ -290,13 +322,35 @@ def build_audio(
             available_voices=available_mandarin_voices,
             backend=tts_backend,
         )
-        answer_rate = max(mandarin_rate + rate_offset, 80)
-        clips = [
-            ("prompt", card.prompt_en, edge_english_voice if tts_backend == "edge" else english_voice, english_voice, english_rate),
-            ("answer", card.answer_zh, answer_voice, mandarin_voice, answer_rate),
+        clips: list[tuple[str, str, str, str, int, str | None]] = [
+            (
+                "prompt",
+                card.prompt_en,
+                edge_english_voice if tts_backend == "edge" else english_voice,
+                english_voice,
+                english_rate,
+                speed_preset,
+            )
         ]
+        answer_speeds = list(MANDARIN_AUDIO_SPEEDS)
+        if speed_preset not in answer_speeds:
+            answer_speeds.append(speed_preset)
+        for answer_speed in answer_speeds:
+            speed_rates = _rates_for_speed_preset(answer_speed)
+            base_rate = mandarin_rate if answer_speed == speed_preset else speed_rates["mandarin_rate"]
+            variant_rate = max(base_rate + rate_offset, 80)
+            clips.append(
+                (
+                    "answer" if answer_speed == DEFAULT_SPEED_PRESET else f"answer_{answer_speed}",
+                    card.answer_zh,
+                    answer_voice,
+                    mandarin_voice,
+                    variant_rate,
+                    answer_speed,
+                )
+            )
 
-        for role, text, voice, fallback_voice, rate in clips:
+        for role, text, voice, fallback_voice, rate, clip_speed in clips:
             path, actual_backend, actual_rate, reused, actual_voice = _build_audio_file(
                 text=text,
                 backend=tts_backend,
@@ -316,15 +370,18 @@ def build_audio(
             if actual_backend != tts_backend:
                 stats.fallback_used += 1
 
-            metadata = _audio_metadata(
-                card=card,
-                role=role,
-                text=text,
-                requested_backend=tts_backend,
-                actual_backend=actual_backend,
-                voice=actual_voice,
-                rate=actual_rate,
-                audio_path=path,
+            metadata = _audio_metadata_with_speed(
+                _audio_metadata(
+                    card=card,
+                    role=role,
+                    text=text,
+                    requested_backend=tts_backend,
+                    actual_backend=actual_backend,
+                    voice=actual_voice,
+                    rate=actual_rate,
+                    audio_path=path,
+                ),
+                clip_speed,
             )
             _write_audio_metadata(_metadata_path(path), metadata)
             stats.metadata_written += 1
@@ -379,8 +436,9 @@ def speak_practice(
     seconds: int = DEFAULT_RECORD_SECONDS,
     english_voice: str = DEFAULT_ENGLISH_VOICE,
     mandarin_voice: str = DEFAULT_MANDARIN_VOICE,
-    english_rate: int = 170,
-    mandarin_rate: int = 150,
+    speed_preset: str = DEFAULT_SPEED_PRESET,
+    english_rate: int | None = None,
+    mandarin_rate: int | None = None,
     input_device: str = "0",
     replay: bool = True,
     seed: int | None = None,
@@ -392,6 +450,7 @@ def speak_practice(
     ensure_project_dirs()
     if tts_backend not in TTS_BACKENDS:
         raise ValueError(f"Unknown TTS backend: {tts_backend}")
+    english_rate, mandarin_rate = _resolve_rates(speed_preset, english_rate, mandarin_rate)
     lessons, errors = validate_lessons(latest=latest, lesson_id=lesson_id)
     if errors:
         print("Lesson validation failed:")

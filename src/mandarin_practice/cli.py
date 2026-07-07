@@ -9,6 +9,8 @@ from mandarin_practice.audio import (
     DEFAULT_EDGE_MANDARIN_VOICE,
     DEFAULT_ENGLISH_VOICE,
     DEFAULT_MANDARIN_VOICE,
+    DEFAULT_SPEED_PRESET,
+    SPEED_PRESET_NAMES,
     TTS_BACKENDS,
     build_audio,
     speak_practice,
@@ -51,8 +53,14 @@ def main() -> None:
     audio_build_parser.add_argument("--edge-english-voice", default=DEFAULT_EDGE_ENGLISH_VOICE, help="Edge neural voice for prompts.")
     audio_build_parser.add_argument("--edge-voice", default=DEFAULT_EDGE_MANDARIN_VOICE, help="Edge neural voice for Mandarin answers.")
     audio_build_parser.add_argument("--azure-voice", default=DEFAULT_AZURE_MANDARIN_VOICE, help="Azure neural voice for Mandarin answers.")
-    audio_build_parser.add_argument("--english-rate", type=int, default=170, help="Prompt speech rate.")
-    audio_build_parser.add_argument("--mandarin-rate", type=int, default=150, help="Answer speech rate.")
+    audio_build_parser.add_argument(
+        "--speed",
+        choices=SPEED_PRESET_NAMES,
+        default=DEFAULT_SPEED_PRESET,
+        help="Named speed preset. Direct rate flags override the selected preset.",
+    )
+    audio_build_parser.add_argument("--english-rate", type=int, help="Prompt speech rate.")
+    audio_build_parser.add_argument("--mandarin-rate", type=int, help="Answer speech rate.")
     audio_build_parser.add_argument("--single-voice", action="store_true", help="Use only --edge-voice or --mandarin-voice for answers.")
     audio_build_parser.add_argument("--seed", type=int, help="Shuffle selected cards with a deterministic seed.")
 
@@ -80,8 +88,14 @@ def main() -> None:
     session_build_parser.add_argument("--mandarin-voice", default=DEFAULT_MANDARIN_VOICE, help="macOS voice for answer fallback audio.")
     session_build_parser.add_argument("--edge-english-voice", default=DEFAULT_EDGE_ENGLISH_VOICE, help="Edge neural voice for prompts.")
     session_build_parser.add_argument("--edge-voice", default=DEFAULT_EDGE_MANDARIN_VOICE, help="Edge neural voice for Mandarin answers.")
-    session_build_parser.add_argument("--english-rate", type=int, default=170, help="Prompt speech rate.")
-    session_build_parser.add_argument("--mandarin-rate", type=int, default=150, help="Answer speech rate.")
+    session_build_parser.add_argument(
+        "--speed",
+        choices=SPEED_PRESET_NAMES,
+        default=DEFAULT_SPEED_PRESET,
+        help="Named speed preset. Direct rate flags override the selected preset.",
+    )
+    session_build_parser.add_argument("--english-rate", type=int, help="Prompt speech rate.")
+    session_build_parser.add_argument("--mandarin-rate", type=int, help="Answer speech rate.")
     session_build_parser.add_argument("--single-voice", action="store_true", help="Use only --edge-voice or --mandarin-voice for answers.")
     session_build_parser.add_argument("--seed", type=int, help="Shuffle selected cards with a deterministic seed.")
 
@@ -110,8 +124,14 @@ def main() -> None:
     speak_parser.add_argument("--tts-backend", choices=TTS_BACKENDS, default="say", help="Answer TTS backend. Defaults to say.")
     speak_parser.add_argument("--edge-voice", default=DEFAULT_EDGE_MANDARIN_VOICE, help="Edge neural voice for answers.")
     speak_parser.add_argument("--azure-voice", default=DEFAULT_AZURE_MANDARIN_VOICE, help="Azure neural voice for answers.")
-    speak_parser.add_argument("--english-rate", type=int, default=170, help="Prompt speech rate.")
-    speak_parser.add_argument("--mandarin-rate", type=int, default=150, help="Answer speech rate.")
+    speak_parser.add_argument(
+        "--speed",
+        choices=SPEED_PRESET_NAMES,
+        default=DEFAULT_SPEED_PRESET,
+        help="Named speed preset. Direct rate flags override the selected preset.",
+    )
+    speak_parser.add_argument("--english-rate", type=int, help="Prompt speech rate.")
+    speak_parser.add_argument("--mandarin-rate", type=int, help="Answer speech rate.")
     speak_parser.add_argument("--input-device", default="0", help="ffmpeg avfoundation audio device index. Defaults to 0.")
     speak_parser.add_argument("--no-replay", action="store_true", help="Do not replay your recorded response.")
     speak_parser.add_argument("--single-voice", action="store_true", help="Use only --mandarin-voice instead of rotating voice profiles.")
@@ -240,6 +260,7 @@ def main() -> None:
                 edge_english_voice=args.edge_english_voice,
                 edge_voice=args.edge_voice,
                 azure_voice=args.azure_voice,
+                speed_preset=args.speed,
                 english_rate=args.english_rate,
                 mandarin_rate=args.mandarin_rate,
                 seed=args.seed,
@@ -259,6 +280,7 @@ def main() -> None:
                 mandarin_voice=args.mandarin_voice,
                 edge_english_voice=args.edge_english_voice,
                 edge_voice=args.edge_voice,
+                speed_preset=args.speed,
                 english_rate=args.english_rate,
                 mandarin_rate=args.mandarin_rate,
                 seed=args.seed,
@@ -284,6 +306,7 @@ def main() -> None:
             seconds=args.seconds,
             english_voice=args.english_voice,
             mandarin_voice=args.mandarin_voice,
+            speed_preset=args.speed,
             english_rate=args.english_rate,
             mandarin_rate=args.mandarin_rate,
             input_device=args.input_device,

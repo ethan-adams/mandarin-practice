@@ -10,12 +10,18 @@ from mandarin_practice.audio import (
     DEFAULT_EDGE_MANDARIN_VOICE,
     DEFAULT_ENGLISH_VOICE,
     DEFAULT_MANDARIN_VOICE,
+    DEFAULT_SPEED_PRESET,
+    MANDARIN_AUDIO_SPEEDS,
+    SPEED_PRESETS,
     TTS_BACKENDS,
     _audio_metadata,
+    _audio_metadata_with_speed,
     _available_say_voices,
     _build_audio_file,
     _metadata_path,
     _relative_path,
+    _resolve_rates,
+    _rates_for_speed_preset,
     _voice_for_card,
     _write_audio_metadata,
 )
@@ -53,8 +59,9 @@ def build_session(
     mandarin_voice: str = DEFAULT_MANDARIN_VOICE,
     edge_english_voice: str = DEFAULT_EDGE_ENGLISH_VOICE,
     edge_voice: str = DEFAULT_EDGE_MANDARIN_VOICE,
-    english_rate: int = 170,
-    mandarin_rate: int = 150,
+    speed_preset: str = DEFAULT_SPEED_PRESET,
+    english_rate: int | None = None,
+    mandarin_rate: int | None = None,
     seed: int | None = None,
     voice_variety: bool = True,
 ) -> SessionBuildStats:
@@ -65,6 +72,7 @@ def build_session(
         raise ValueError("response_gap_seconds must be non-negative")
     if not SESSION_ID_PATTERN.fullmatch(session_id):
         raise ValueError("session_id must be a simple folder name using letters, numbers, dot, dash, or underscore")
+    english_rate, mandarin_rate = _resolve_rates(speed_preset, english_rate, mandarin_rate)
 
     lessons, errors = validate_lessons(latest=latest, lesson_id=lesson_id)
     if errors:
@@ -98,7 +106,6 @@ def build_session(
             available_voices=available_mandarin_voices,
             backend=tts_backend,
         )
-        answer_rate = max(mandarin_rate + rate_offset, 80)
         prompt_audio = _build_session_audio(
             stats=stats,
             card=card,
@@ -108,17 +115,27 @@ def build_session(
             voice=edge_english_voice if tts_backend == "edge" else english_voice,
             fallback_voice=english_voice,
             rate=english_rate,
+            speed_preset=speed_preset,
         )
-        answer_audio = _build_session_audio(
-            stats=stats,
-            card=card,
-            role="answer",
-            text=card.answer_zh,
-            backend=tts_backend,
-            voice=answer_voice,
-            fallback_voice=mandarin_voice,
-            rate=answer_rate,
-        )
+        answer_audio_variants = {}
+        answer_speeds = list(MANDARIN_AUDIO_SPEEDS)
+        if speed_preset not in answer_speeds:
+            answer_speeds.append(speed_preset)
+        for answer_speed in answer_speeds:
+            speed_rates = _rates_for_speed_preset(answer_speed)
+            base_rate = mandarin_rate if answer_speed == speed_preset else speed_rates["mandarin_rate"]
+            answer_audio_variants[answer_speed] = _build_session_audio(
+                stats=stats,
+                card=card,
+                role="answer" if answer_speed == DEFAULT_SPEED_PRESET else f"answer_{answer_speed}",
+                text=card.answer_zh,
+                backend=tts_backend,
+                voice=answer_voice,
+                fallback_voice=mandarin_voice,
+                rate=max(base_rate + rate_offset, 80),
+                speed_preset=answer_speed,
+            )
+        answer_audio = answer_audio_variants.get(speed_preset) or answer_audio_variants.get(DEFAULT_SPEED_PRESET, "")
         rating_state = dict(state["cards"].get(card.id, _default_card_state(card)))
 
         manifest_cards.append(
@@ -132,6 +149,7 @@ def build_session(
                 "notes": card.notes,
                 "prompt_audio_path": prompt_audio,
                 "answer_audio_path": answer_audio,
+                "answer_audio_variants": answer_audio_variants,
                 "answer_voice": answer_voice,
                 "answer_voice_label": answer_voice_label,
                 "rating_state": rating_state,
@@ -156,6 +174,9 @@ def build_session(
             "tts_backend": tts_backend,
             "english_voice": edge_english_voice if tts_backend == "edge" else english_voice,
             "mandarin_voice": edge_voice if tts_backend == "edge" else mandarin_voice,
+            "speed_preset": speed_preset,
+            "speed_presets": SPEED_PRESETS,
+            "answer_speed_presets": list(MANDARIN_AUDIO_SPEEDS),
             "english_rate": english_rate,
             "mandarin_rate": mandarin_rate,
             "voice_variety": voice_variety,
@@ -186,6 +207,7 @@ def _build_session_audio(
     voice: str,
     fallback_voice: str,
     rate: int,
+    speed_preset: str | None = None,
 ) -> str:
     path, actual_backend, actual_rate, reused, actual_voice = _build_audio_file(
         text=text,
@@ -206,15 +228,18 @@ def _build_session_audio(
     if actual_backend != backend:
         stats.fallback_used += 1
 
-    metadata = _audio_metadata(
-        card=card,
-        role=role,
-        text=text,
-        requested_backend=backend,
-        actual_backend=actual_backend,
-        voice=actual_voice,
-        rate=actual_rate,
-        audio_path=path,
+    metadata = _audio_metadata_with_speed(
+        _audio_metadata(
+            card=card,
+            role=role,
+            text=text,
+            requested_backend=backend,
+            actual_backend=actual_backend,
+            voice=actual_voice,
+            rate=actual_rate,
+            audio_path=path,
+        ),
+        speed_preset,
     )
     _write_audio_metadata(_metadata_path(path), metadata)
     stats.metadata_written += 1

@@ -53,6 +53,7 @@ uv run mandarin speak --mandarin-voice "Sandy (Chinese (China mainland))"
 uv run mandarin speak --mandarin-voice "Tingting (Chinese (China mainland))"
 uv run mandarin speak --seconds 7 --no-replay
 uv run mandarin speak --single-voice
+uv run mandarin speak --speed slow
 uv sync --extra edge
 uv run mandarin speak --tts-backend edge
 uv run mandarin speak --tts-backend edge --edge-voice zh-CN-YunxiNeural
@@ -63,12 +64,15 @@ Prebuild high-quality prompt and answer audio for later phone/web sessions:
 ```bash
 uv run mandarin audio build --latest --limit 10
 uv run mandarin audio build --lesson Ethan_260624 --tts-backend edge
+uv run mandarin audio build --latest --speed slow
 uv run mandarin audio build --mode review --limit 25 --single-voice
 ```
 
 The audio builder caches generated files under `lessons/audio/cache/` and writes
 sidecar metadata next to each audio file. Edge neural TTS is the default backend;
-if Edge is unavailable, the builder falls back to macOS `say`.
+if Edge is unavailable, the builder falls back to macOS `say`. Named speed
+presets are `slow`, `normal`, and `fast`; direct `--english-rate` and
+`--mandarin-rate` options still override the selected preset.
 
 Build a phone-friendly hands-off session manifest with prebuilt prompt and
 answer audio:
@@ -76,11 +80,14 @@ answer audio:
 ```bash
 uv run mandarin session build --latest --limit 10
 uv run mandarin session build --mode review --limit 25 --response-gap 7
+uv run mandarin session build --latest --limit 10 --speed slow
 ```
 
 Session manifests are written under `lessons/audio/sessions/<session-id>/`.
 The default session id is `latest`, so the website can load
-`lessons/audio/sessions/latest/session.json` automatically.
+`lessons/audio/sessions/latest/session.json` automatically. Session manifests
+include normal and slow Mandarin answer audio variants so the website can switch
+speed without relying only on browser playback-rate changes.
 
 By default, `speak` rotates Mandarin voice profiles across answers when macOS
 has multiple Chinese voices installed. Install additional Mandarin voices in

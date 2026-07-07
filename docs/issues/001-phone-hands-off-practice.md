@@ -1,5 +1,7 @@
 # Issue 1: Build Phone Hands-Off Practice Session Player
 
+Status: implemented in `feature/1-phone-session-player`.
+
 ## Goal
 
 Create a mobile-friendly practice flow that can run through cards with minimal tapping: English prompt, response gap, Mandarin answer, optional repeat, then rating.

@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - main
+    paths:
+      - ".github/workflows/update-site.yml"
+      - "README.md"
+      - "docs/**"
+      - "src/**"
+      - "website/**"
+      - "pyproject.toml"
+      - "uv.lock"
   workflow_dispatch:
 
 jobs:
@@ -16,6 +24,11 @@ jobs:
           SOURCE_SHA: ${{ github.sha }}
           SOURCE_REF: ${{ github.ref_name }}
         run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "SITE_REPO_DISPATCH_TOKEN is not configured."
+            exit 1
+          fi
+
           curl --fail-with-body \
             --request POST \
             --header "Accept: application/vnd.github+json" \
