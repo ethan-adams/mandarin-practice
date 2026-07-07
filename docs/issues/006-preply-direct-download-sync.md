@@ -1,5 +1,7 @@
 # Issue 6: Add Optional Direct Preply PDF Download Sync
 
+Status: implemented in `feature/6-preply-direct-sync`.
+
 ## Goal
 
 Let the weekly import workflow pull lesson PDFs from Preply directly, when the user is already logged in locally, while keeping the current manual-download import path as the reliable fallback.

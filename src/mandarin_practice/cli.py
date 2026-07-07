@@ -22,6 +22,7 @@ from mandarin_practice.extract import extract_lessons
 from mandarin_practice.ingest import ingest_lessons
 from mandarin_practice.paths import PROJECT_ROOT
 from mandarin_practice.practice import practice, stats
+from mandarin_practice.preply_sync import DEFAULT_PREPLY_PROFILE_DIR, DEFAULT_PREPLY_STAGING_DIR, PREPLY_HOME_URL, sync_preply_lessons
 from mandarin_practice.session import DEFAULT_RESPONSE_GAP_SECONDS, DEFAULT_SESSION_ID, build_session
 
 
@@ -179,6 +180,36 @@ def main() -> None:
         help="Show imports without copying files or updating the manifest.",
     )
 
+    preply_sync_parser = subparsers.add_parser("preply", help="Sync Preply lesson materials from a local browser profile.")
+    preply_sync_subparsers = preply_sync_parser.add_subparsers(dest="preply_command", required=True)
+    preply_sync_command = preply_sync_subparsers.add_parser("sync", help="Find Preply lesson PDFs and import downloaded files.")
+    preply_sync_command.add_argument(
+        "--profile-dir",
+        default=str(DEFAULT_PREPLY_PROFILE_DIR),
+        help=f"Dedicated browser profile. Defaults to {DEFAULT_PREPLY_PROFILE_DIR}.",
+    )
+    preply_sync_command.add_argument(
+        "--staging-dir",
+        default=str(DEFAULT_PREPLY_STAGING_DIR),
+        help=f"Folder for downloaded PDFs before import. Defaults to {DEFAULT_PREPLY_STAGING_DIR}.",
+    )
+    preply_sync_command.add_argument(
+        "--start-url",
+        default=PREPLY_HOME_URL,
+        help=f"Preply page to inspect first. Defaults to {PREPLY_HOME_URL}.",
+    )
+    preply_sync_command.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Maximum PDF candidates to download. Defaults to all candidates.",
+    )
+    preply_sync_command.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="List likely PDF materials without downloading or importing.",
+    )
+
     extract_parser = subparsers.add_parser("extract", help="Extract text from imported PDFs.")
     extract_parser.add_argument(
         "--force",
@@ -331,6 +362,15 @@ def main() -> None:
             dry_run=args.dry_run,
             normalize_preply=True,
         )
+    elif args.command == "preply":
+        if args.preply_command == "sync":
+            sync_preply_lessons(
+                profile_dir=Path(args.profile_dir),
+                staging_dir=Path(args.staging_dir),
+                start_url=args.start_url,
+                dry_run=args.dry_run,
+                limit=args.limit,
+            )
     elif args.command == "extract":
         extract_lessons(force=args.force)
     elif args.command == "expand":

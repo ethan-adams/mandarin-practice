@@ -10,6 +10,7 @@ The repo intentionally does not commit lesson PDFs, extracted text, generated ca
 uv run mandarin doctor
 uv run mandarin ingest --source ~/Downloads
 uv run mandarin import-preply --source ~/Downloads --dry-run
+uv run mandarin preply sync --dry-run
 uv run mandarin extract
 uv run mandarin expand
 uv run mandarin validate
@@ -122,6 +123,26 @@ speed controls, and pronunciation feedback, see [docs/ROADMAP.md](docs/ROADMAP.m
 For agent-ready implementation slices, see [docs/issue-backlog.md](docs/issue-backlog.md)
 and [AGENTS.md](AGENTS.md).
 
+## Optional Preply Browser Sync
+
+Manual download plus `import-preply` remains the reliable fallback. If you want
+the CLI to reuse a local logged-in Preply browser session, install the optional
+browser automation dependency:
+
+```bash
+uv sync --extra preply
+uv run playwright install chromium
+uv run mandarin preply sync --dry-run
+```
+
+The first `preply sync` run opens Preply in a dedicated browser profile under
+`~/.local/share/mandarin-practice/preply-browser-profile`. Log in manually in
+that browser window, then press Enter in the terminal or rerun the command. The
+CLI does not accept or store Preply passwords. Downloaded PDF candidates are staged under
+`~/.local/share/mandarin-practice/preply-downloads` and then imported through
+the same normalization, duplicate detection, and raw manifest path used by
+`import-preply`.
+
 ## System Shape
 
 1. `ingest` copies new `Ethan_*.pdf` files into `lessons/raw/` and records metadata.
@@ -133,8 +154,10 @@ and [AGENTS.md](AGENTS.md).
 6. `speak` runs audiobook-style voice response practice and records your answers.
 7. `session build` creates a phone web session manifest plus prompt and answer audio.
 8. `practice` can drill all cards, new cards, a lesson, or the latest lesson.
-9. `expand` creates extra practice from the lesson patterns you have already seen.
-10. Later, `audio` can export prompt/silence/answer practice tracks.
+9. `preply sync` can optionally stage likely Preply PDF materials from a local
+   logged-in browser profile before handing them to `import-preply` logic.
+10. `expand` creates extra practice from the lesson patterns you have already seen.
+11. Later, `audio` can export prompt/silence/answer practice tracks.
 
 Set `MANDARIN_PRACTICE_HOME=/path/to/project-or-data-root` if you want to run
 the command from another folder while keeping lesson data in this repo.

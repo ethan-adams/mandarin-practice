@@ -2,7 +2,7 @@
 
 ## Current Status
 
-- The local CLI workflow can ingest Preply-style lesson PDFs, extract text, validate structured cards, drill due cards, and run spoken call/response sessions.
+- The local CLI workflow can ingest Preply-style lesson PDFs, optionally stage PDFs from a logged-in local Preply browser profile, extract text, validate structured cards, drill due cards, and run spoken call/response sessions.
 - Audio answers can use macOS voices or the optional Edge neural TTS backend, with generated Edge audio cached locally.
 - The static website can load a generated local session manifest and run a phone-sized prompt, response gap, answer, speed selection, and rating loop.
 - The website can attempt advisory Mandarin speech recognition during the response gap when the browser supports Web Speech APIs, then include the coarse result in exported session ratings.
@@ -34,7 +34,7 @@ Goal: make weekly lesson import automatic and reliable.
 - Done: add duplicate detection by hash and lesson date.
 - Done: add a dry-run mode so import rules can be checked without copying files.
 - Later: store source URL when an upstream export includes one.
-- Later: add optional direct Preply browser sync from a local logged-in browser profile; keep manual PDF download plus `import-preply` as the dependable fallback.
+- Done: add optional direct Preply browser sync from a local logged-in browser profile; keep manual PDF download plus `import-preply` as the dependable fallback.
 
 ## 2. High-Quality Audio Pipeline
 

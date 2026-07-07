@@ -8,6 +8,7 @@ dependencies = []
 
 [project.optional-dependencies]
 edge = ["edge-tts>=7.0.0"]
+preply = ["playwright>=1.45.0"]
 
 [project.scripts]
 mandarin = "mandarin_practice.cli:main"
