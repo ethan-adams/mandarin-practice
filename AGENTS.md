@@ -18,9 +18,12 @@ When given a request like `start issue 1`, `work issue 1`, or `do MLP-1`, use th
 6. Implement the smallest complete slice that satisfies the issue acceptance criteria.
 7. Run `make test` and any issue-specific checks before committing.
 8. Commit one coherent change with a conventional prefix such as `feat:`, `fix:`, `chore:`, `docs:`, or `test:`.
-9. If GitHub is configured and the user expects PR flow, push the branch and open a PR. Otherwise, leave the branch ready and report the exact status.
+9. Merge the completed task branch into `main`.
+10. Push `main` to `origin` at the end of each completed task.
 
-Do not push directly to `main` for ordinary issue work unless the user explicitly asks.
+This repo uses direct-to-main workflow by default. Do not open a PR or leave a
+completed task only on a feature branch unless the user explicitly asks for PR
+flow or asks you not to push.
 
 ## Verification Baseline
 
