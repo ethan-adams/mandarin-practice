@@ -226,6 +226,51 @@ progress::-moz-progress-bar {
   transform-origin: left center;
 }
 
+.pronunciation {
+  min-height: 74px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  display: grid;
+  gap: 4px;
+}
+
+.pronunciation span,
+.pronunciation small {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.pronunciation strong {
+  color: #344054;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.pronunciation[data-status="listening"] {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.pronunciation[data-status="matched"] {
+  border-color: #b7dccb;
+  background: #e8f5ef;
+}
+
+.pronunciation[data-status="close"] {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.pronunciation[data-status="missed"],
+.pronunciation[data-status="no_speech"] {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
 .transport,
 .rating-row {
   display: grid;

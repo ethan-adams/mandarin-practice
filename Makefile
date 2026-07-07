@@ -32,3 +32,4 @@ practice:
 
 test:
 	uv run python -m unittest discover -s tests
+	node --test website/pronunciation.test.mjs

@@ -38,6 +38,12 @@
             <span id="timerFill"></span>
           </div>
 
+          <div class="pronunciation" id="pronunciationPanel" aria-live="polite">
+            <span id="pronunciationStatus">Pronunciation feedback unavailable.</span>
+            <strong id="pronunciationFeedback">Manual rating is still available.</strong>
+            <small id="pronunciationTranscript"></small>
+          </div>
+
           <div class="transport">
             <button class="primary" id="startSession" type="button">Start</button>
             <button class="secondary" id="playPrompt" type="button">Prompt</button>
@@ -93,6 +99,7 @@
         <audio id="answerAudio" preload="metadata"></audio>
       </section>
     </main>
+    <script src="./pronunciation.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

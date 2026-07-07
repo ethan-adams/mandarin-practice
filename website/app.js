@@ -8,6 +8,13 @@ const state = {
   runId: 0,
   timer: null,
   ratings: [],
+  recognition: {
+    available: false,
+    active: false,
+    instance: null,
+    result: null,
+    error: "",
+  },
 };
 
 const els = {
@@ -34,7 +41,15 @@ const els = {
   sessionTitle: document.querySelector("#sessionTitle"),
   sessionFile: document.querySelector("#sessionFile"),
   downloadRatings: document.querySelector("#downloadRatings"),
+  pronunciationPanel: document.querySelector("#pronunciationPanel"),
+  pronunciationStatus: document.querySelector("#pronunciationStatus"),
+  pronunciationFeedback: document.querySelector("#pronunciationFeedback"),
+  pronunciationTranscript: document.querySelector("#pronunciationTranscript"),
 };
+
+const pronunciation = window.MandarinPronunciation;
+const RecognitionCtor = pronunciation?.speechRecognitionConstructor?.();
+state.recognition.available = Boolean(RecognitionCtor);
 
 function currentCard() {
   return state.manifest?.cards?.[state.index] || null;
@@ -57,6 +72,35 @@ function setStatus(text, ready = false) {
   els.status.classList.toggle("ready", ready);
 }
 
+function recognitionLabel(status) {
+  return {
+    listening: "Listening",
+    matched: "Matched",
+    close: "Close",
+    missed: "Missed",
+    no_speech: "No speech",
+    unsupported: "Unsupported",
+    unavailable: "Unavailable",
+  }[status] || "Ready";
+}
+
+function renderRecognition() {
+  const result = state.recognition.result;
+  const supported = state.recognition.available;
+  const status = state.recognition.active ? "listening" : result?.status || (supported ? "unavailable" : "unsupported");
+  els.pronunciationPanel.dataset.status = status;
+  els.pronunciationStatus.textContent = supported
+    ? "Pronunciation feedback"
+    : "Speech recognition is not supported in this browser.";
+  els.pronunciationFeedback.textContent =
+    status === "unavailable" ? "Feedback will appear after you answer." : recognitionLabel(status);
+  els.pronunciationTranscript.textContent = result?.transcript
+    ? `Heard: ${result.transcript}`
+    : result?.error
+      ? `Note: ${result.error}`
+      : "";
+}
+
 function render() {
   const cards = state.manifest?.cards || [];
   const card = currentCard();
@@ -73,6 +117,7 @@ function render() {
     els.promptText.textContent = "No session loaded.";
     els.answerBlock.hidden = true;
     els.timerFill.style.transform = "scaleX(0)";
+    renderRecognition();
     return;
   }
 
@@ -84,6 +129,7 @@ function render() {
   els.answerBlock.hidden = state.phase !== "answer" && state.phase !== "rating";
   els.promptAudio.src = audioSrc(card.prompt_audio_path);
   els.answerAudio.src = audioSrc(answerAudioPath(card));
+  renderRecognition();
 }
 
 async function loadManifest(manifest) {
@@ -95,6 +141,7 @@ async function loadManifest(manifest) {
   state.phase = "ready";
   state.running = false;
   state.ratings = [];
+  resetRecognitionResult();
   els.gapSeconds.value = manifest.playback?.response_gap_seconds ?? els.gapSeconds.value;
   els.repeatAnswer.checked = Boolean(manifest.playback?.repeat_answer);
   const answerSpeeds = manifest.audio?.answer_speed_presets || [];
@@ -138,6 +185,104 @@ function play(audio) {
   return audio.play();
 }
 
+function resetRecognitionResult() {
+  stopRecognition();
+  state.recognition.result = null;
+  state.recognition.error = "";
+  renderRecognition();
+}
+
+function stopRecognition() {
+  if (!state.recognition.instance) {
+    state.recognition.active = false;
+    return;
+  }
+  try {
+    state.recognition.instance.stop();
+  } catch {
+    // The browser may have already stopped the recognizer.
+  }
+  state.recognition.active = false;
+}
+
+function buildRecognitionResult(card, transcript, confidence = 0, error = "") {
+  if (!state.recognition.available || !pronunciation) {
+    return {
+      status: "unsupported",
+      transcript: "",
+      confidence: 0,
+      error: "Speech recognition is not supported in this browser.",
+      expected_text: card?.answer_text || "",
+      created_at: new Date().toISOString(),
+    };
+  }
+  const comparison = pronunciation.comparePronunciation(card?.answer_text || "", transcript || "");
+  return {
+    ...comparison,
+    transcript: transcript || "",
+    confidence,
+    error,
+    expected_text: card?.answer_text || "",
+    created_at: new Date().toISOString(),
+  };
+}
+
+function startRecognition(card, runId) {
+  resetRecognitionResult();
+  if (!RecognitionCtor || !pronunciation) {
+    state.recognition.result = buildRecognitionResult(card, "", 0, "Speech recognition is not supported in this browser.");
+    renderRecognition();
+    return;
+  }
+
+  const recognition = new RecognitionCtor();
+  recognition.lang = "zh-CN";
+  recognition.interimResults = true;
+  recognition.continuous = false;
+  recognition.maxAlternatives = 3;
+  state.recognition.instance = recognition;
+  state.recognition.active = true;
+
+  recognition.onresult = (event) => {
+    if (runId !== state.runId) {
+      return;
+    }
+    const alternatives = [...event.results]
+      .flatMap((result) => [...result])
+      .filter((alternative) => alternative.transcript);
+    const best = alternatives.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0];
+    state.recognition.result = buildRecognitionResult(card, best?.transcript || "", best?.confidence || 0);
+    renderRecognition();
+  };
+  recognition.onerror = (event) => {
+    if (runId !== state.runId) {
+      return;
+    }
+    state.recognition.result = buildRecognitionResult(card, "", 0, event.error || "Recognition failed.");
+    state.recognition.active = false;
+    renderRecognition();
+  };
+  recognition.onend = () => {
+    if (runId !== state.runId) {
+      return;
+    }
+    state.recognition.active = false;
+    if (!state.recognition.result) {
+      state.recognition.result = buildRecognitionResult(card, "", 0);
+    }
+    renderRecognition();
+  };
+
+  try {
+    recognition.start();
+    renderRecognition();
+  } catch (error) {
+    state.recognition.active = false;
+    state.recognition.result = buildRecognitionResult(card, "", 0, error.message || "Recognition failed.");
+    renderRecognition();
+  }
+}
+
 async function startCard() {
   const card = currentCard();
   if (!card) {
@@ -146,6 +291,7 @@ async function startCard() {
   const runId = state.runId + 1;
   state.runId = runId;
   stopTimer();
+  resetRecognitionResult();
   state.phase = "prompt";
   state.running = true;
   render();
@@ -158,8 +304,10 @@ async function startCard() {
 }
 
 function startGap(runId) {
+  const card = currentCard();
   state.phase = "response";
   render();
+  startRecognition(card, runId);
   const total = Math.max(Number(els.gapSeconds.value) || 0, 0);
   const started = Date.now();
   if (total === 0) {
@@ -189,6 +337,7 @@ async function showAnswer(runId = state.runId + 1) {
     return;
   }
   state.runId = runId;
+  stopRecognition();
   state.phase = "answer";
   els.timerFill.style.transform = "scaleX(0)";
   render();
@@ -221,6 +370,7 @@ function rateCard(rating) {
     card_id: card.card_id,
     lesson_id: card.lesson_id,
     rating,
+    recognition: state.recognition.result,
     prompt_text: card.prompt_text,
     answer_text: card.answer_text,
     rated_at: new Date().toISOString(),
@@ -241,6 +391,7 @@ function downloadRatings() {
   const payload = {
     version: 1,
     session_id: state.manifest?.session_id || "",
+    result_type: "session_ratings",
     ratings: state.ratings,
   };
   const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: "application/json" });

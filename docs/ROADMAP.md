@@ -5,6 +5,7 @@
 - The local CLI workflow can ingest Preply-style lesson PDFs, extract text, validate structured cards, drill due cards, and run spoken call/response sessions.
 - Audio answers can use macOS voices or the optional Edge neural TTS backend, with generated Edge audio cached locally.
 - The static website can load a generated local session manifest and run a phone-sized prompt, response gap, answer, speed selection, and rating loop.
+- The website can attempt advisory Mandarin speech recognition during the response gap when the browser supports Web Speech APIs, then include the coarse result in exported session ratings.
 - Latest imported PDF: `lessons/raw/Ethan_260624.pdf`
 - Latest extracted text: `lessons/extracted/Ethan_260624.txt`
 - Latest structured lesson deck: `lessons/structured/Ethan_260624.json`
@@ -70,10 +71,10 @@ Goal: make slower listening a first-class control across CLI, audio export, and 
 
 Goal: give Duolingo-style feedback without letting imperfect recognition block practice.
 
-- Start with browser speech recognition for the mobile web flow where available.
-- Compare recognized Mandarin text against `answer_zh`, allowing common punctuation and wording differences.
-- Store recorded attempts and recognition results under `lessons/audio/responses/`.
-- Add simple feedback first: matched, close, missed, or no speech detected.
+- Done: start with browser speech recognition for the mobile web flow where available.
+- Done: compare recognized Mandarin text against `answer_zh`, allowing common punctuation, whitespace, and simple variant differences.
+- Done: include recognition results in exported session ratings.
+- Done: add simple feedback first: matched, close, missed, or no speech detected.
 - Later, add phoneme or pinyin-level scoring using a speech provider that supports pronunciation assessment.
 - Keep manual self-rating available because automatic Mandarin pronunciation scoring will be noisy at first.
 
@@ -85,4 +86,4 @@ Goal: give Duolingo-style feedback without letting imperfect recognition block p
 4. Done: add hands-off playback controls: autoplay, response gap duration, repeat answer, and simple rating.
 5. Done: add Preply auto-import once the lesson-to-session pipeline is stable.
 6. Done: add slow/normal speed controls for generated sessions and the phone player.
-7. Add pronunciation recognition after the phone practice loop is usable without it.
+7. Done: add pronunciation recognition after the phone practice loop is usable without it.
