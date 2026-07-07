@@ -49,7 +49,7 @@ jobs:
           }
           EOF
 
-          if git diff --quiet -- public/mandarin-source.json; then
+          if [ -z "$(git status --porcelain -- public/mandarin-source.json)" ]; then
             echo "No site metadata changes to publish."
             exit 0
           fi
