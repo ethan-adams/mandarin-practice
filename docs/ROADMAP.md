@@ -33,7 +33,7 @@ Goal: make weekly lesson import automatic and reliable.
 - Done: add duplicate detection by hash and lesson date.
 - Done: add a dry-run mode so import rules can be checked without copying files.
 - Later: store source URL when an upstream export includes one.
-- Later: add an optional browser/mail integration if Preply does not provide a stable local export path.
+- Later: add optional direct Preply browser sync from a local logged-in browser profile; keep manual PDF download plus `import-preply` as the dependable fallback.
 
 ## 2. High-Quality Audio Pipeline
 

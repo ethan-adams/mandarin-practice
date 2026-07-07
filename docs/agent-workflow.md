@@ -37,6 +37,9 @@ For website changes, start `make website` and verify the app at `http://localhos
 - `docs/<issue>-short-name` for documentation-only changes.
 - Prefer one focused commit per issue.
 - Use conventional commit prefixes.
+- Commit and push every intentional repo change before handing work back,
+  including documentation-only changes and issue/backlog updates, unless the
+  user explicitly asks not to.
 
 ## Done Notes
 

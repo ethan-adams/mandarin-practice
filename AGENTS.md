@@ -25,6 +25,11 @@ This repo uses direct-to-main workflow by default. Do not open a PR or leave a
 completed task only on a feature branch unless the user explicitly asks for PR
 flow or asks you not to push.
 
+Any intentional repo change should end with a commit and push, including
+documentation-only updates, backlog changes, and stopping-point notes. Do not
+leave useful edits uncommitted at the end of a turn unless the user explicitly
+asks not to commit or push.
+
 ## Verification Baseline
 
 Use these checks by default:
@@ -52,6 +57,7 @@ make website
 ## Repo Hygiene
 
 - Keep edits scoped to the issue.
+- Commit and push scoped repo changes before handing work back to the user.
 - Do not overwrite local lesson data or review history.
 - Preserve ignored local lesson/audio files unless the issue explicitly targets them.
 - Update `docs/ROADMAP.md` or `docs/issue-backlog.md` when a feature changes direction or an issue is completed.

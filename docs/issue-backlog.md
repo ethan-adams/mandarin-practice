@@ -11,6 +11,7 @@ Start issue 1. Follow AGENTS.md.
 ## Agent-Ready Issues
 
 - `#5` Add pronunciation recognition feedback - [docs/issues/005-pronunciation-recognition.md](issues/005-pronunciation-recognition.md)
+- `#6` Add optional direct Preply PDF download sync - [docs/issues/006-preply-direct-download-sync.md](issues/006-preply-direct-download-sync.md)
 
 ## Completed Issues
 
