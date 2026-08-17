@@ -4,7 +4,10 @@ export type MandarinCard = {
   promptEn: string;
   answerZh: string;
   pinyin: string;
-  speechPhonemes: string;
+  // Phonemes for the neural (Kokoro) engine. Optional: a card without them is
+  // spoken by the browser's own Chinese voice from its raw hanzi (answerZh), so
+  // corpora that ship no phonemes (e.g. the HSK vocabulary set) still have audio.
+  speechPhonemes?: string;
   notes?: string;
   generated?: boolean;
 };

@@ -72,18 +72,18 @@ export function toneAssessmentHasVerdict(result: ToneAssessmentResult): boolean 
 // so flipping that flag removes it here too once the feedback is validated.
 export function describeToneAssessment(result: ToneAssessmentResult, experimental: boolean = TONE_FEEDBACK_EXPERIMENTAL): string {
   if (result.status === 'no_speech') {
-    return 'No voiced speech was picked up — try again a little closer to the microphone.';
+    return 'No voiced speech was picked up - try again a little closer to the microphone.';
   }
   if (!toneAssessmentHasVerdict(result)) {
     // The assessor bailed out before comparing contours (too little voiced
     // audio, unparseable pinyin, or a neutral-tone-only phrase): say so
     // instead of inventing a verdict.
     if (!result.syllables.length) {
-      return 'The tones in this phrase could not be analyzed — trust your own ear here.';
+      return 'The tones in this phrase could not be analyzed - trust your own ear here.';
     }
     return result.syllables.some((syllable) => syllable.tone !== null && syllable.tone !== 5)
-      ? 'Only a moment of voiced audio was picked up — not enough to judge tones. Try again a little closer to the microphone.'
-      : 'This phrase uses neutral tones only, so there is no contour to compare — trust your own ear here.';
+      ? 'Only a moment of voiced audio was picked up - not enough to judge tones. Try again a little closer to the microphone.'
+      : 'This phrase uses neutral tones only, so there is no contour to compare - trust your own ear here.';
   }
   const verdict =
     result.status === 'matched'
@@ -91,7 +91,7 @@ export function describeToneAssessment(result: ToneAssessmentResult, experimenta
       : result.status === 'close'
         ? 'Some pitch contours may be drifting from the expected tones'
         : 'The pitch contours sounded different from the expected tones';
-  return experimental ? `${verdict} — an experimental estimate, so trust your own ear first.` : `${verdict}.`;
+  return experimental ? `${verdict} - an experimental estimate, so trust your own ear first.` : `${verdict}.`;
 }
 
 const accentedToneMap: Record<string, { plain: string; tone: number }> = {

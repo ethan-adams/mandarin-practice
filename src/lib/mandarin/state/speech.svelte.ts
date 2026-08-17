@@ -1,7 +1,7 @@
 // Audio playback for the learning core: prebuilt/neural speech engine
 // lifecycle, per-card voice selection, and the verified browser-voice
 // fallback. Browser speech only counts as available once a Mandarin voice is
-// verified — speaking zh text without one is a silent no-op on most
+// verified - speaking zh text without one is a silent no-op on most
 // Windows/Linux browsers, and silence must never be reported as success.
 
 import { findMandarinVoice } from '../../utils/mandarinBrowserVoice';
@@ -67,7 +67,7 @@ export class SpeechController {
   }
 
   #describePlayback(result: MandarinSpeechResult, kind: 'answer' | 'contrast') {
-    if (result.backend === 'prebuilt') return `Played prebuilt ${kind === 'contrast' ? 'contrast ' : ''}audio — no download needed.`;
+    if (result.backend === 'prebuilt') return `Played prebuilt ${kind === 'contrast' ? 'contrast ' : ''}audio - no download needed.`;
     return `${result.cached ? 'Replayed cached' : 'Generated'} ${result.backend.toUpperCase()} ${kind === 'contrast' ? 'contrast ' : ''}audio.`;
   }
 
@@ -103,6 +103,16 @@ export class SpeechController {
     if (!card) return;
     this.#currentAudio?.pause();
     this.#releaseAudioUrl();
+
+    // No neural phonemes for this card (e.g. the HSK vocabulary corpus): the
+    // neural engine has nothing to synthesize, so speak the hanzi with the
+    // browser voice directly instead of loading the model to no purpose.
+    const phonemes = card.speechPhonemes;
+    if (!phonemes) {
+      await this.speakAnswerFallback(card);
+      return;
+    }
+
     const voice =
       this.#lastSpokenCardId === card.id && this.#previousVoice
         ? this.#previousVoice
@@ -110,7 +120,7 @@ export class SpeechController {
     this.lastAudioVoice = voice;
 
     try {
-      const result = await this.#ensureEngine().synthesize(card.id, card.speechPhonemes, voice);
+      const result = await this.#ensureEngine().synthesize(card.id, phonemes, voice);
       if (this.#getCurrentCard()?.id !== card.id) return;
       this.#previousVoice = result.voice;
       this.#lastSpokenCardId = card.id;

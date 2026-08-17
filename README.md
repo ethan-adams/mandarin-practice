@@ -49,11 +49,12 @@ npm run check     # type-check with svelte-check
 
 - Plain **Svelte 5 + Vite + TypeScript**. No backend, no accounts, no tracking.
   Everything runs in your browser, and review history is kept in local storage.
-- **Ships with a small sample deck.** The app is designed to load a larger card
-  set from `/mandarin-source.json` if one is present, and otherwise falls back
-  to a built-in demo deck so it works out of the box. This public build has no
-  source file, so it runs on the sample deck. A short banner notes when the
-  fallback deck is in use.
+- **Ships with an HSK vocabulary deck.** The app loads its card set from
+  `/mandarin-source.json`, an HSK 1 to 3 vocabulary corpus of about 2,200 words
+  built from the dataset noted under Data sources below. These cards use the
+  browser voice for audio (see below). If that file is ever missing, the app
+  falls back to a small built-in demo deck so it still works out of the box, and
+  a short banner notes when the fallback deck is in use.
 - **Audio is client-side and free.** Answer audio uses your browser's speech
   synthesis by default. When the device supports it, a neural voice model
   ([Kokoro-82M](https://huggingface.co/onnx-community/Kokoro-82M-v1.1-zh-ONNX))
@@ -65,6 +66,17 @@ npm run check     # type-check with svelte-check
   in-browser pitch detector, both of which vary by browser and device. When they
   are not available the rest of the app still works.
 
+## Data sources
+
+The HSK vocabulary deck in `public/mandarin-source.json` is built from the
+[Complete HSK Vocabulary](https://github.com/drkameleon/complete-hsk-vocabulary)
+dataset by Yanis Zafirópulos, used under the MIT License. It covers HSK 3.0
+levels 1 to 3 (simplified hanzi, tone-numbered pinyin, a short English gloss,
+and the HSK level). `scripts/build-hsk-corpus.mjs` fetches the source and
+rebuilds the deck deterministically, and [NOTICE](NOTICE) carries the full
+attribution.
+
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). Bundled vocabulary data is attributed under Data
+sources above and in [NOTICE](NOTICE).

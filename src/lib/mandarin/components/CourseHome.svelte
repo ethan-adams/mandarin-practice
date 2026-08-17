@@ -22,7 +22,7 @@
   let continueDetail = $derived.by(() => {
     if (overall.due) return `${overall.due} to review · ${overall.fresh} new`;
     if (overall.fresh) return `${overall.fresh} new card${overall.fresh === 1 ? '' : 's'} waiting`;
-    return 'All caught up — review anything, or train your ear';
+    return 'All caught up - review anything, or train your ear';
   });
 
   function progressOf(unit: CourseUnit) {

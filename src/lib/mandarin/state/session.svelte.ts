@@ -66,7 +66,7 @@ export class PracticeSession {
    */
   sessionPlanned = $derived.by(() => {
     // In 'all' mode rated cards stay in the queue, so "remaining" counts the
-    // cards not yet rated within the CURRENT batch — a keep-going after a
+    // cards not yet rated within the CURRENT batch - a keep-going after a
     // full pass then plans a real re-review pass instead of degenerating to
     // one-card batches.
     const remaining =
@@ -175,7 +175,7 @@ export class PracticeSession {
   }
 
   selectCard(index: number) {
-    // Picking a card from the queue always lands in card practice — from the
+    // Picking a card from the queue always lands in card practice - from the
     // summary view this resumes the session at the chosen card.
     this.practiceView = 'cards';
     this.currentIndex = index;
@@ -206,7 +206,7 @@ export class PracticeSession {
     if (this.sessionActive) {
       this.sessionRatings = [...this.sessionRatings, rating];
       // Batch boundary or queue exhausted: pause on the summary. The planned
-      // count (not the raw target) is the boundary — in 'all' mode rated
+      // count (not the raw target) is the boundary - in 'all' mode rated
       // cards never leave the queue, so a small unit would otherwise loop
       // the last card forever without ever reaching its summary.
       if (this.sessionRatings.length >= this.sessionPlanned || nextCards.length === 0) {
@@ -229,7 +229,7 @@ export class PracticeSession {
 
   /**
    * Browser Back/Forward only: a bare /mandarin URL returns to the course
-   * home. This must never run from loadCorpus/deck-swap paths — a corpus
+   * home. This must never run from loadCorpus/deck-swap paths - a corpus
    * retry finishing mid-practice would otherwise teleport the user home and
    * discard their session.
    */
@@ -258,7 +258,7 @@ export class PracticeSession {
 
     this.lessonFilter = null;
     this.mode = 'all';
-    // Deep links browse the whole deck unbounded — no batch summary.
+    // Deep links browse the whole deck unbounded - no batch summary.
     this.sessionActive = false;
     this.sessionRatings = [];
     // Never yank the user out of listening practice: a corpus load resolving

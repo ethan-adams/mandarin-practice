@@ -52,8 +52,11 @@ export async function fetchMandarinCorpus(): Promise<LoadedCorpus> {
   const response = await fetch('/mandarin-source.json', { cache: 'no-cache' });
   if (!response.ok) throw new Error(`Corpus request failed (${response.status})`);
   const payload = (await response.json()) as CorpusPayload;
+  // speechPhonemes is intentionally not required: cards without it are spoken by
+  // the browser voice (see SpeechController.speakAnswer). id/promptEn/answerZh/
+  // pinyin are the minimum a card needs to be practicable.
   const cards = Array.isArray(payload.cards)
-    ? payload.cards.filter((card) => card.id && card.promptEn && card.answerZh && card.pinyin && card.speechPhonemes)
+    ? payload.cards.filter((card) => card.id && card.promptEn && card.answerZh && card.pinyin)
     : [];
   if (!cards.length) throw new Error('Corpus payload contained no usable cards');
   return {

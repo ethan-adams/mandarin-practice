@@ -19,7 +19,7 @@ export type LessonMeta = {
 };
 
 // Fallback titles when the deck ships no unit metadata (deck-provided titles
-// always win — see logic/course.ts).
+// always win - see logic/course.ts).
 const HSK_TITLES: Record<string, string> = {
   Greetings: 'Greetings',
   Numbers_Time: 'Numbers & Time',

@@ -191,13 +191,13 @@ export class ToneCoachController {
 
   recognitionDetail = $derived.by(() => {
     // Permission wait is not "listening": say what is actually happening.
-    if (this.micPending) return 'Waiting for microphone permission — allow it to get tone feedback.';
+    if (this.micPending) return 'Waiting for microphone permission - allow it to get tone feedback.';
     // Live guidance wins while capture is running: interim assessments are
     // recomputed on partial audio every frame and must never read as verdicts.
     if (this.toneAssessmentActive) return 'Speak naturally. The highlighted tile follows the current syllable.';
     if (this.toneAssessment) {
       // Honest-feedback rule: tone contours are an unvalidated, experimental
-      // estimate, so describe them qualitatively — never as a numeric score.
+      // estimate, so describe them qualitatively - never as a numeric score.
       const textSignal = this.recognitionResult?.transcript ? ` Text heard: ${this.recognitionResult.transcript}` : '';
       return `${describeToneAssessment(this.toneAssessment)}${textSignal}`;
     }
@@ -274,7 +274,7 @@ export class ToneCoachController {
     recognizer.onresult = (event) => {
       // Identity guard: recognition events are async, so a trailing event
       // arriving after the user moved on must not synthesize a result against
-      // the NEW card — that would flip the tile gate and leak the next
+      // the NEW card - that would flip the tile gate and leak the next
       // card's answer pre-reveal.
       const liveCard = this.#getCard();
       if (!liveCard || liveCard.id !== card.id) return;
@@ -325,7 +325,7 @@ export class ToneCoachController {
 
     // Permission prompts can outlive the card and resolve out of order.
     // Every continuation below first proves it is still the latest request
-    // for the card on screen — a stale continuation must not touch shared
+    // for the card on screen - a stale continuation must not touch shared
     // state (it would clobber a newer capture's stream and leak its tracks).
     const requestToken = ++this.#micRequestSeq;
     const isStale = () => requestToken !== this.#micRequestSeq || (this.#getCard()?.id ?? null) !== card.id;
@@ -416,7 +416,7 @@ export class ToneCoachController {
       this.stopRecognition();
       const name = error instanceof Error ? error.name : '';
       if (name === 'NotAllowedError' || name === 'SecurityError') {
-        this.toneError = 'Microphone access is blocked. Allow the microphone for this site in your browser settings, then try again — manual rating still works.';
+        this.toneError = 'Microphone access is blocked. Allow the microphone for this site in your browser settings, then try again - manual rating still works.';
       } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
         this.toneError = 'No microphone was found, so the tone coach is off. Practice and manual rating still work.';
       } else {

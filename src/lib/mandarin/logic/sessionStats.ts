@@ -1,6 +1,5 @@
 // Session summary statistics: practice-day streaks and the review outlook.
-// All numbers derive from the learner's own ratings and the SRS schedule —
-// nothing here touches or changes scheduling.
+// All numbers derive from the learner's own ratings and the SRS schedule - // nothing here touches or changes scheduling.
 
 import type { Card } from './deck';
 import { isDue, today, type CardState, type Rating } from './srs';

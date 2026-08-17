@@ -8,7 +8,7 @@ type TokenizerFile = { model: { vocab: Record<string, number> } };
 const modelBase = `https://huggingface.co/${MANDARIN_MODEL.id}/resolve/${MANDARIN_MODEL.revision}`;
 // Both backends synthesize with the fp16 model. The int8 `model_quantized.onnx`
 // was the historical WASM default but is numerically broken on onnxruntime-web's
-// WASM kernels for this model — it emits an all-NaN waveform on the large
+// WASM kernels for this model - it emits an all-NaN waveform on the large
 // majority of inferences (measured ~0-10% finite in-browser, ~0% on several
 // inputs), which no session option, thread count, or retry budget could salvage.
 // fp16 is stable (every corpus fixture synthesizes finite audio) and only ~37 MB

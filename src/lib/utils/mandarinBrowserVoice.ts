@@ -1,5 +1,5 @@
 // speechSynthesis is the last playback tier, and it only counts as available
-// when the browser actually has a Mandarin voice installed — speaking a zh-CN
+// when the browser actually has a Mandarin voice installed - speaking a zh-CN
 // utterance without one is a silent no-op on most Windows/Linux browsers.
 
 export type SpeechSynthesisVoiceLike = {
@@ -25,7 +25,7 @@ export function pickMandarinVoice<T extends SpeechSynthesisVoiceLike>(voices: re
 }
 
 // Chrome populates getVoices() asynchronously, so an empty list may just mean
-// "not loaded yet" — wait for voiceschanged before concluding no voice exists.
+// "not loaded yet" - wait for voiceschanged before concluding no voice exists.
 export function findMandarinVoice<T extends SpeechSynthesisVoiceLike>(
   synth: SpeechSynthesisSourceLike<T>,
   timeoutMs = 1500,

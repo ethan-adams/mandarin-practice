@@ -24,7 +24,7 @@
     if (!outlook.dueNow && outlook.nextDueDate) {
       parts.push(`next ${outlook.nextDueCount} review${outlook.nextDueCount === 1 ? '' : 's'} on ${outlook.nextDueDate}`);
     }
-    return parts.length ? parts.join(' · ') : 'Nothing scheduled — you are all caught up.';
+    return parts.length ? parts.join(' · ') : 'Nothing scheduled - you are all caught up.';
   });
 </script>
 
@@ -38,7 +38,7 @@
       <span>cards done</span>
     </div>
     <div class="stat">
-      <strong>{tally.accuracyPct === null ? '—' : `${tally.accuracyPct}%`}</strong>
+      <strong>{tally.accuracyPct === null ? ' - ' : `${tally.accuracyPct}%`}</strong>
       <span>correct{tally.hard ? ` · ${tally.hard} hard` : ''}</span>
     </div>
     <div class="stat">

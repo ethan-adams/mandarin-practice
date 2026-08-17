@@ -2,7 +2,7 @@
 // derive per-unit progress from the user's own SRS review state. When the
 // deck ships course metadata (top-level units array) it is authoritative;
 // otherwise units are inferred from lessonId patterns. Progress numbers are
-// honest by construction — they only reflect the learner's manual ratings
+// honest by construction - they only reflect the learner's manual ratings
 // (attempts, streaks, intervals), never unvalidated automatic assessment.
 
 import type { Card, DeckUnit } from './deck';
@@ -25,7 +25,7 @@ export type UnitProgress = {
   total: number;
   /** Cards rated at least once. */
   seen: number;
-  /** Cards scheduled a week or more out — survived repeated correct ratings. */
+  /** Cards scheduled a week or more out - survived repeated correct ratings. */
   mastered: number;
   /** Seen cards whose review is due now. */
   due: number;

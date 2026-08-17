@@ -122,7 +122,7 @@ describe('Mandarin human-speech benchmark contract', () => {
     expect(report.caveat).toContain('No consented human clips');
     expect(report.metrics.correct.precision).toBeNull();
     expect(report.review.known_false_positives).toEqual([]);
-    expect(report.review.next_calibration_decisions).toContain('Run the planned 20–40 clip pilot before estimating scorer accuracy.');
+    expect(report.review.next_calibration_decisions).toContain('Run the planned 20 - 40 clip pilot before estimating scorer accuracy.');
   });
 
   it('decodes PCM16 WAV at the local audio boundary', () => {

@@ -147,7 +147,7 @@
        so its label swap is not re-announced as noise. -->
   <div class="corpus-banner" class:active={session.corpusLoadFailed}>
     <span role="status" aria-label="Practice deck status">
-      {session.corpusLoadFailed ? `Practice deck failed to load — using ${session.fallbackCards.length} built-in cards.` : ''}
+      {session.corpusLoadFailed ? `Practice deck failed to load - using ${session.fallbackCards.length} built-in cards.` : ''}
     </span>
     {#if session.corpusLoadFailed}
       <button type="button" onclick={() => void session.loadCorpus()} disabled={session.corpusLoading}>

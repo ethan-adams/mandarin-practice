@@ -325,7 +325,7 @@ export function createBenchmarkReport(manifest: BenchmarkManifest, fixtures: Fix
           ]
         : [
             'Collect no data until explicit consent and withdrawal records are in place.',
-            'Run the planned 20–40 clip pilot before estimating scorer accuracy.',
+            'Run the planned 20 - 40 clip pilot before estimating scorer accuracy.',
             'Keep wrong_initial and wrong_final unassessed until a validated local phoneme adapter exists.',
           ],
     },

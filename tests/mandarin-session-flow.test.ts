@@ -126,7 +126,7 @@ describe('mandarin session flow', () => {
 
   it("an 'all'-mode session (nothing due) still reaches its summary at the planned count", async () => {
     // Both tutor cards already scheduled far ahead: startUnit falls back to
-    // 'all' mode, where rated cards never leave the queue — the summary must
+    // 'all' mode, where rated cards never leave the queue - the summary must
     // trigger off the planned count, not queue exhaustion.
     window.localStorage.setItem(
       'mandarin-practice-demo-state-v2',
@@ -145,7 +145,7 @@ describe('mandarin session flow', () => {
     let panel = await screen.findByLabelText('Session summary');
     expect(within(panel).getByText('cards done').previousElementSibling).toHaveTextContent('2');
 
-    // Keep going after a full pass plans a real re-review pass — not a
+    // Keep going after a full pass plans a real re-review pass - not a
     // degenerate one-card batch that bounces straight back to the summary.
     await fireEvent.click(within(panel).getByRole('button', { name: 'Keep going' }));
     await rateOnce('Correct');

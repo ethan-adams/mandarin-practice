@@ -8,7 +8,7 @@ import { MANDARIN_FALLBACK_CARDS } from '../src/lib/mandarin/data/mandarinFallba
 // practice silently continuing on the built-in demo deck is a lie of omission.
 // The UI must say so, non-blockingly, and offer a retry.
 
-const BANNER_TEXT = new RegExp(`Practice deck failed to load — using ${MANDARIN_FALLBACK_CARDS.length} built-in cards\\.`);
+const BANNER_TEXT = new RegExp(`Practice deck failed to load - using ${MANDARIN_FALLBACK_CARDS.length} built-in cards\\.`);
 
 const corpusCards = [
   {
@@ -111,7 +111,7 @@ describe('mandarin corpus load-failure visibility', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
     // After the failed retry settles the banner persists and the button is
-    // usable again — not stuck disabled on 'Retrying…'.
+    // usable again - not stuck disabled on 'Retrying…'.
     await waitFor(() => expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled());
     expect(screen.getByText(BANNER_TEXT)).toBeInTheDocument();
   });
@@ -176,7 +176,7 @@ describe('mandarin corpus load-failure visibility', () => {
     await findBanner();
     await fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
-    // While the retry is pending the button must be disabled — otherwise a
+    // While the retry is pending the button must be disabled - otherwise a
     // double-click fires overlapping loads whose responses race.
     const pending = await screen.findByRole('button', { name: 'Retrying…' });
     expect(pending).toBeDisabled();
@@ -256,13 +256,9 @@ describe('mandarin corpus load-failure visibility', () => {
 
   // The deck-swap reset keys on card ids, so the fallback and corpus id
   // namespaces must stay disjoint: pin that invariant against the shipped
-  // corpus so a regenerated corpus reusing a demo id fails loudly here.
-  //
-  // Skipped in this build: it reads public/mandarin-source.json, the larger
-  // card set. This build ships only the sample deck and has no such file, so
-  // the test has nothing to compare against. It runs unchanged in a build that
-  // does ship a corpus file.
-  it.skip('keeps fallback card ids disjoint from the shipped corpus ids', async () => {
+  // corpus so a regenerated corpus reusing a demo id fails loudly here. This
+  // build ships the HSK corpus at public/mandarin-source.json, so the check runs.
+  it('keeps fallback card ids disjoint from the shipped corpus ids', async () => {
     const fs = await import('node:fs/promises');
     const path = await import('node:path');
     const corpusPath = path.join(process.cwd(), 'public', 'mandarin-source.json');
