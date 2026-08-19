@@ -7,11 +7,13 @@
   import { ToneCoachController } from './state/toneCoach.svelte';
   import { ListeningStore } from './state/listening.svelte';
   import { EvidenceStore } from './state/evidence.svelte';
+  import { SyncController } from '../sync/syncController.svelte';
   import PracticeSidebar from './components/PracticeSidebar.svelte';
   import CardPractice from './components/CardPractice.svelte';
   import CourseHome from './components/CourseHome.svelte';
   import ListeningPractice from './components/ListeningPractice.svelte';
   import SessionSummary from './components/SessionSummary.svelte';
+  import SyncPanel from './components/SyncPanel.svelte';
 
   const settings = new PracticeSettings();
   const session = new PracticeSession(() => toneCoach.reset());
@@ -22,6 +24,13 @@
   const speech = new SpeechController(settings, () => session.currentCard ?? null);
   const listening = new ListeningStore();
   const evidence = new EvidenceStore();
+  // After a pulled merge rewrites localStorage, re-hydrate the in-memory stores
+  // so the newly-synced progress shows without a page reload.
+  const sync = new SyncController(() => {
+    session.loadState();
+    evidence.load();
+    listening.load();
+  });
 
   function reveal() {
     if (!session.currentCard) return;
@@ -120,6 +129,7 @@
     session.loadState();
     evidence.load();
     listening.load();
+    sync.load();
     toneCoach.init();
     void session.loadCorpus();
     session.syncCardFromPath();
@@ -205,6 +215,8 @@
       </article>
     </div>
   {/if}
+
+  <SyncPanel {sync} />
 
   <footer class="practice-footer">
     <button onclick={() => session.resetDemo()}>Reset progress</button>

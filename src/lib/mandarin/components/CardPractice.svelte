@@ -9,6 +9,7 @@
   import type { EvidenceStore } from '../state/evidence.svelte';
   import ToneCoachPanel from './ToneCoachPanel.svelte';
   import ContrastDrillPanel from './ContrastDrillPanel.svelte';
+  import WritingPractice from './WritingPractice.svelte';
 
   let {
     session,
@@ -35,6 +36,13 @@
   let currentCard = $derived(session.currentCard);
   let currentPinyin = $derived(currentCard ? pinyinText(currentCard.pinyin) : '');
   let currentParts = $derived(currentCard ? pinyinParts(currentCard.pinyin) : []);
+
+  // The writing panel is opt-in per card; collapse it whenever the card changes.
+  let showWriting = $state(false);
+  $effect(() => {
+    currentCard?.id;
+    showWriting = false;
+  });
 </script>
 
 {#if currentCard}
@@ -113,6 +121,17 @@
       {/if}
 
       {#if currentCard.notes}<small class="note">{currentCard.notes}</small>{/if}
+
+      <div class="writing-toggle">
+        <button type="button" onclick={() => (showWriting = !showWriting)} aria-expanded={showWriting}>
+          {showWriting ? 'Hide writing practice' : '✍ Practice writing'}
+        </button>
+      </div>
+      {#if showWriting}
+        {#key currentCard.id}
+          <WritingPractice word={currentCard.answerZh} />
+        {/key}
+      {/if}
     </div>
 
     <div class="rating-row">
@@ -339,6 +358,20 @@
     color: var(--text-secondary);
     font-size: 16px;
     line-height: 1.45;
+  }
+
+  .writing-toggle {
+    margin-top: 18px;
+  }
+
+  .writing-toggle button {
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--bg-primary) 70%, var(--bg-secondary));
+    color: var(--text-primary);
+    font-weight: 800;
   }
 
   .prompt-actions {

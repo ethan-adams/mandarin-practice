@@ -15,8 +15,7 @@ import {
   type ListeningRound,
 } from '../../utils/mandarinContrastPractice';
 
-const listeningStorageKey = 'mandarin-practice-listening-results-v1';
-const listeningCountStorageKey = 'mandarin-practice-listening-count-v1';
+import { listeningCountStorageKey, listeningStorageKey } from './storageKeys';
 const listeningSeed = 'mandarin-listening-v1';
 
 export class ListeningStore {

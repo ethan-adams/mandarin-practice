@@ -17,7 +17,7 @@ import type { PronunciationResult } from '../../utils/mandarinPronunciation';
 import type { Rating } from '../logic/srs';
 import type { CharacterFeedback } from './toneCoach.svelte';
 
-const pronunciationEvidenceStorageKey = 'mandarin-practice-pronunciation-evidence-v1';
+import { pronunciationEvidenceStorageKey } from './storageKeys';
 
 export type DrillAction = 'target_played' | 'contrast_played' | 'spoke' | 'retry' | 'skip' | Rating;
 

@@ -1,0 +1,14 @@
+name = "mandarin-backend"
+main = "src/index.ts"
+compatibility_date = "2024-09-01"
+
+# Encrypted progress blobs live in a KV namespace. Create it once (it's free) and
+# paste the id below — see README.md. For `wrangler dev` a local KV is simulated
+# automatically, so you can develop and test without a Cloudflare account.
+[[kv_namespaces]]
+binding = "SYNC"
+id = "49788b685fc84d9eab46c2e711b8f15c"
+
+[vars]
+# ALLOW_ORIGIN = "https://mandarin.ethanadams.dev"  # tighten in production if desired
+MAX_BLOB_BYTES = "262144"
