@@ -18,6 +18,7 @@ from mandarin_practice.audio import (
 from mandarin_practice.cards import validate_lessons
 from mandarin_practice.doctor import run_doctor
 from mandarin_practice.expand import DEFAULT_OUTPUT, expand_practice
+from mandarin_practice.export import DEFAULT_EXPORT_PATH, export_corpus
 from mandarin_practice.extract import extract_lessons
 from mandarin_practice.ingest import ingest_lessons
 from mandarin_practice.paths import PROJECT_ROOT
@@ -103,6 +104,16 @@ def main() -> None:
     validate_parser = subparsers.add_parser("validate", help="Validate structured lesson JSON.")
     validate_parser.add_argument("--latest", action="store_true", help="Validate only the newest tutor lesson.")
     validate_parser.add_argument("--lesson", help="Validate a specific lesson id, such as Ethan_260620.")
+
+    export_parser = subparsers.add_parser("export", help="Export lessons to the app's mandarin-source.json.")
+    export_parser.add_argument("--latest", action="store_true", help="Export only the newest tutor lesson.")
+    export_parser.add_argument("--lesson", help="Export a specific lesson id, such as Ethan_260620.")
+    export_parser.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_EXPORT_PATH,
+        help=f"Output path. Defaults to the app corpus at {DEFAULT_EXPORT_PATH}.",
+    )
 
     today_parser = subparsers.add_parser("today", help="Practice due cards for today.")
     today_parser.add_argument("--limit", type=int, default=25, help="Maximum cards. Defaults to 25.")
@@ -326,6 +337,9 @@ def main() -> None:
                 print(f"fail {error}")
             raise SystemExit(1)
         print(f"Validated {len(lessons)} lesson file(s).")
+    elif args.command == "export":
+        card_count, lesson_count, out_path = export_corpus(out=args.out, latest=args.latest, lesson_id=args.lesson)
+        print(f"Exported {card_count} cards from {lesson_count} lesson(s) to {out_path}")
     elif args.command == "today":
         practice(limit=args.limit, mode="review", audio=not args.no_audio, seed=args.seed)
     elif args.command == "speak":

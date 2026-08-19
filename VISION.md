@@ -14,6 +14,29 @@ tracking** — everything runs in the browser and progress lives in `localStorag
 That local-first, free, private character is a feature, not an accident. The
 direction below *extends* it without betraying it.
 
+## One integrated product (repository layout)
+
+This repo is the whole Mandarin product — content pipeline, app, and backend:
+
+```
+(root)      the Svelte practice app (SRS, listening, tone, writing)
+backend/    the Cloudflare Worker (encrypted sync + Character subgraph)
+factory/    the Python lesson pipeline (ingest -> extract -> expand -> validate)
+```
+
+`factory/` is the former `mandarin-lesson-practice` repo, merged in with history
+(its old plain-JS `website/` was retired — this Svelte app replaced it).
+
+**How the pieces connect — the factory feeds the app.** The factory turns tutor
+lesson PDFs into cards; `uv run mandarin export` (in `factory/`) writes them as
+the app's `public/mandarin-source.json`, mapping the factory's snake_case fields
+to the app's camelCase schema. So real tutor lessons flow into the polished app
+without hand-copying:
+
+```
+tutor PDF -> factory: ingest/extract/expand/validate -> export -> public/mandarin-source.json -> the app
+```
+
 ## Where it's going
 
 Two threads, and the good part is that they're really one idea.
