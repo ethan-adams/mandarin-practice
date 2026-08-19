@@ -1,0 +1,18 @@
+.DS_Store
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Tutor-provided and generated learning material stays local by default.
+lessons/raw/*
+lessons/extracted/*
+lessons/structured/*
+lessons/audio/*
+lessons/state/*
+!lessons/raw/.gitkeep
+!lessons/extracted/.gitkeep
+!lessons/structured/.gitkeep
+!lessons/audio/.gitkeep
+!lessons/state/.gitkeep

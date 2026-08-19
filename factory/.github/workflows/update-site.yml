@@ -1,0 +1,61 @@
+name: Update site
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/update-site.yml"
+      - "README.md"
+      - "docs/**"
+      - "src/**"
+      - "website/**"
+      - "pyproject.toml"
+      - "uv.lock"
+  workflow_dispatch:
+
+jobs:
+  update-site-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout ethanadams.dev
+        uses: actions/checkout@v4
+        with:
+          repository: ethan-adams/ethanadams.dev
+          ref: master
+          token: ${{ secrets.SITE_REPO_DISPATCH_TOKEN }}
+          path: ethanadams.dev
+
+      - name: Update Mandarin source marker
+        env:
+          GH_TOKEN: ${{ secrets.SITE_REPO_DISPATCH_TOKEN }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref_name }}
+          SOURCE_REPO: ${{ github.repository }}
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "SITE_REPO_DISPATCH_TOKEN is not configured."
+            exit 1
+          fi
+
+          cd ethanadams.dev
+          mkdir -p public
+          cat > public/mandarin-source.json <<EOF
+          {
+            "source_repo": "${SOURCE_REPO}",
+            "source_ref": "${SOURCE_REF}",
+            "source_sha": "${SOURCE_SHA}",
+            "updated_at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+
+          if [ -z "$(git status --porcelain -- public/mandarin-source.json)" ]; then
+            echo "No site metadata changes to publish."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/mandarin-source.json
+          git commit -m "chore: refresh Mandarin source ${SOURCE_SHA:0:7}"
+          git push origin HEAD:master
