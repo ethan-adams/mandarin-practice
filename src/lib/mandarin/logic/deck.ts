@@ -3,6 +3,7 @@
 // visibly (never silently practice the wrong deck).
 
 import type { MandarinCard } from '../data/mandarinFallbackCards';
+import { API_BASE } from '../../config';
 
 export type Card = MandarinCard;
 
@@ -48,10 +49,26 @@ function validUnits(units: unknown): DeckUnit[] | null {
   return cleaned.length ? cleaned : null;
 }
 
-export async function fetchMandarinCorpus(): Promise<LoadedCorpus> {
+// Content now lives in mandarin-api (Postgres), fetched from `${API_BASE}/v1/content`
+// (2026-08-20 pivot). The bundled `public/mandarin-source.json` stays as an offline
+// fallback: used when the server isn't configured or is unreachable, so the app
+// never hard-fails to a blank deck.
+async function fetchCorpusPayload(): Promise<CorpusPayload> {
+  if (API_BASE) {
+    try {
+      const response = await fetch(`${API_BASE}/v1/content`, { cache: 'no-cache' });
+      if (response.ok) return (await response.json()) as CorpusPayload;
+    } catch {
+      // Fall through to the bundled corpus below.
+    }
+  }
   const response = await fetch('/mandarin-source.json', { cache: 'no-cache' });
   if (!response.ok) throw new Error(`Corpus request failed (${response.status})`);
-  const payload = (await response.json()) as CorpusPayload;
+  return (await response.json()) as CorpusPayload;
+}
+
+export async function fetchMandarinCorpus(): Promise<LoadedCorpus> {
+  const payload = await fetchCorpusPayload();
   // speechPhonemes is intentionally not required: cards without it are spoken by
   // the browser voice (see SpeechController.speakAnswer). id/promptEn/answerZh/
   // pinyin are the minimum a card needs to be practicable.

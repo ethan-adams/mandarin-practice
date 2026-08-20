@@ -36,7 +36,7 @@ import {
   contourFromFrames,
   type ContourComparison,
 } from '../../utils/mandarinToneReference';
-import { loadWhisper, recognizeMandarin, whisperRequested, type WhisperProgress } from '../../utils/mandarinWhisper';
+import { transcribeClip, transcriptionAvailable } from '../../utils/mandarinTranscribe';
 import { characterUnits, type CharacterUnit } from '../logic/pinyin';
 import type { Card } from '../logic/deck';
 
@@ -278,29 +278,23 @@ export class ToneCoachController {
     return this.#contours[card.answerZh] ?? null;
   }
 
-  /** Turn on word recognition, downloading the Whisper model once (cached after). */
+  /** Turn on word recognition. Transcription runs on the server (mandarin-api),
+   *  so there is nothing to download — enabling just needs the server configured. */
   async enableWordCheck() {
-    if (this.whisperState === 'loading') return;
-    this.whisperState = 'loading';
-    this.whisperProgress = 0;
-    this.whisperDetail = 'Downloading the recognition model (one time)…';
-    try {
-      await loadWhisper((p: WhisperProgress) => {
-        if (typeof p.progress === 'number') this.whisperProgress = Math.round(p.progress);
-        this.whisperDetail = `Downloading model… ${Math.round(p.progress ?? 0)}%`;
-      });
-      this.whisperState = 'ready';
-      this.wordCheckEnabled = true;
-      this.whisperDetail = 'Word check on — speak and it reads back what you said.';
-    } catch (error) {
+    if (!transcriptionAvailable()) {
       this.whisperState = 'error';
-      this.whisperDetail = error instanceof Error ? error.message : 'Could not load the recognition model.';
+      this.whisperDetail = 'Word check needs the practice server, which isn’t available right now. Tone feedback still works.';
+      return;
     }
+    this.whisperState = 'ready';
+    this.wordCheckEnabled = true;
+    this.whisperProgress = 100;
+    this.whisperDetail = 'Word check on — speak and it reads back what you said.';
   }
 
   disableWordCheck() {
     this.wordCheckEnabled = false;
-    this.whisperState = whisperRequested() ? 'ready' : 'off';
+    this.whisperState = 'off';
     this.whisperDetail = '';
   }
 
@@ -311,17 +305,6 @@ export class ToneCoachController {
       } catch {
         // Already stopped.
       }
-    }
-  }
-
-  async #decodeBlob(blob: Blob): Promise<{ samples: Float32Array; sampleRate: number }> {
-    const buffer = await blob.arrayBuffer();
-    const audioContext = new AudioContext();
-    try {
-      const audioBuffer = await audioContext.decodeAudioData(buffer);
-      return { samples: new Float32Array(audioBuffer.getChannelData(0)), sampleRate: audioBuffer.sampleRate };
-    } finally {
-      void audioContext.close();
     }
   }
 
@@ -336,8 +319,7 @@ export class ToneCoachController {
     this.whisperState = 'transcribing';
     this.whisperDetail = 'Reading back what you said…';
     try {
-      const { samples, sampleRate } = await this.#decodeBlob(blob);
-      const transcript = await recognizeMandarin(samples, sampleRate);
+      const transcript = await transcribeClip(blob);
       const card = this.#getCard();
       // Transcription is slow; a card change invalidates this result.
       if (!card || card.id !== cardId) {

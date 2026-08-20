@@ -17,8 +17,8 @@ dependencies = [
 [project.optional-dependencies]
 # Heavy; installed on the box, lazy-imported at runtime. Kept out of the default
 # set so local dev/tests don't pull CTranslate2 + model weights.
-transcribe = ["faster-whisper>=1.0"]
-dev = ["pytest>=8", "pytest-asyncio>=0.23", "httpx>=0.27"]
+transcribe = ["faster-whisper>=1.0", "opencc-python-reimplemented>=0.1.7"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "httpx>=0.27", "aiosqlite>=0.20"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
