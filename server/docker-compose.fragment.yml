@@ -1,0 +1,21 @@
+# Merge into the box's existing docker-compose (which already runs postgres +
+# qdrant for CCP Signal). This adds mandarin-api and reuses that postgres.
+# Create the DB once:  docker compose exec postgres createdb -U postgres mandarin
+#
+# services:
+  mandarin-api:
+    build: ./mandarin-practice/server   # adjust to wherever the repo lands on the box
+    restart: unless-stopped
+    environment:
+      MANDARIN_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/mandarin
+      MANDARIN_SESSION_SECRET: ${MANDARIN_SESSION_SECRET}
+      MANDARIN_CORS_ORIGINS: ${MANDARIN_CORS_ORIGINS}
+      MANDARIN_WHISPER_MODEL: base   # -> tiny if RAM is tight
+    depends_on:
+      - postgres
+    volumes:
+      - whisper_models:/root/.cache/huggingface   # cache model weights across restarts
+    # No host port; front it with the existing reverse proxy (Traefik/Caddy) like CCP Signal.
+
+# volumes:
+#   whisper_models:

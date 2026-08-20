@@ -1,195 +1,148 @@
 # Mandarin Practice — Vision & Direction
 
 The durable "why and where" for this app, so the direction never has to be
-re-explained. Read this before making architectural changes. Tickets and plans
-are checked against *this* and against the actual code — not the other way
-around. When a claim here and the code disagree, the code wins and this file gets
-corrected with a dated note.
+re-explained. Read this before making architectural changes. Tickets and plans are
+checked against *this* and against the actual code — not the other way around. When
+a claim here and the code disagree, the code wins and this file gets corrected with
+a dated note.
 
 ## What the app is
 
-A browser tool for practicing Mandarin: call-and-response cards, spaced
-repetition, listening drills, character writing, and tone/pronunciation feedback.
-Svelte 5 + Vite + TypeScript. Local-first: everything runs in the browser and
-progress lives in `localStorage`, with optional encrypted sync across devices.
+A browser tool for practicing Mandarin: call-and-response cards, spaced repetition,
+listening drills, character writing, and tone/pronunciation feedback. Svelte 5 +
+Vite + TypeScript on the front end.
 
 The bar (Ethan, 2026-07-16): **a stranger would genuinely choose to learn Chinese
-with it** — "Duolingo + HelloChinese + Preply level good." Someday extracted from
-its monorepo into its own thing, so the learning core stays self-contained.
+with it** — "Duolingo + HelloChinese + Preply level good." It stays its own
+standalone repo so the learning core is self-contained.
 
-## The 2026-08-19 rethink (current direction — start here)
+## The 2026-08-20 pivot — server-owned (current direction, start here)
 
-Ethan called for a total rethink of three things. This is the standing direction:
+Now that there's a **real, already-paid server** (the Lightsail box), the app stops
+pretending it has to do everything in the browser for free. Ethan flipped two
+things this VISION previously treated as sacred:
 
-1. **Prebuilt, stored audio — no on-the-fly synthesis.** Generating audio in the
-   browser (the Kokoro neural model over onnxruntime-web, or live speech
-   synthesis) is **too slow**. Audio is now **pre-generated once, offline, and
-   stored on a real object store**, and the app just plays a URL. This is the top
-   priority — it's the thing that made the app feel slow.
+1. **Accounts + server-owned state.** There are now real accounts, and the
+   **server owns progress** (and content). This replaces the old "local-first, the
+   client is always the source of truth, no accounts, sync-code-only" model. Cross
+   device, richer features, and honest data ownership beat the no-accounts
+   ergonomics.
 
-2. **Selection before a session.** You pick what to practice — **HSK level**,
-   **unit/theme**, or a dedicated **Preply track** — instead of drilling one flat
-   2,200-card pile. The Preply track is a review of Ethan's real tutor lessons
-   (2–3/week; a PDF per lesson, downloaded manually — automation was tried and
-   abandoned, don't retry it).
+2. **Content lives in a server DB.** The 3,222 cards move from the static
+   `public/mandarin-source.json` (fetched in `deck.ts`) into a **Postgres DB served
+   on demand** by a content API. The JSON stays in the repo only as a **seed +
+   offline fallback**, not the canonical store.
 
-3. **Pronunciation that actually runs.** Today's tone/pronunciation feedback
-   leans on the browser Web Speech API, which is missing in many browsers and
-   **silently no-ops** — so it reads as "not implemented." The rebuild scores your
-   spoken **pitch contour against the native reference clip** we now have from the
-   prebuilt audio. Deterministic, works in every browser, honest. Word-level
-   recognition ("did you say the right word") is also built now — opt-in
-   in-browser Whisper (see the Pronunciation section).
+3. **Pronunciation word-check runs server-side.** The opt-in ~230 MB on-device
+   Whisper (`mandarinWhisper.ts` + `@huggingface/transformers` + `opencc-js`) is
+   **replaced by transcription on the box**: the browser uploads a ~30 KB clip →
+   faster-whisper → text. Audio leaving the device is acceptable to Ethan. The
+   always-on tone-contour signal (below) stays fully client-side and needs no
+   upload.
 
-### Storage decision record (2026-08-19)
+### The box (verified via AWS, 2026-08-20)
 
-Chosen: **Cloudflare R2**, served through the existing Worker. Rationale:
+`portfolio-backend` — Lightsail Ubuntu, **2 vCPU / 2 GB RAM / 60 GB disk**
+(`small_3_0`, ~$10/mo, already paid), us-east-1. Runs CCP Signal via docker-compose
+(Postgres + Qdrant). **CPU sits at ~3%** — enormous compute headroom; the only
+scarce resource is the 2 GB RAM. This is affordable because:
 
-- The whole audio library is tiny — **under ~1 GB even at full ambition** (HSK
-  1–6 + example sentences + Preply, multi-voice); the current corpus is ~100 MB.
-  At this scale storage cost is a rounding error anywhere.
-- R2 is **$0 and genuinely fixed**: under the 10 GB free tier, and egress is
-  always free by design — no surprise-bill surface (the thing Ethan asked to
-  avoid). It speaks the **S3 API**, so it is not lock-in; real S3 remains one
-  endpoint change away.
-- Audio is served via a cached route on the **existing `mandarin-backend`
-  Worker** (`GET /v1/audio/:key`), not the r2.dev public URL (whose managed-domain
-  API was erroring for this account). One origin, CORS + cache control in code,
-  entirely within the access we already have.
-
-Considered and rejected: **AWS S3** (egress not free; pulls off the Cloudflare
-stack; only pennies/month but not fixed) and **shipping audio as static files in
-the deploy** (bloats the repo/bundle; no real object store).
-
-Bucket: `mandarin-audio` (account `bf81993449…`). Upload via `wrangler r2 object
-put` with the existing OAuth token — no separate S3 credentials needed.
+- **Content + accounts + progress are RAM rounding-error** — a few MB in Postgres.
+  We **reuse the existing Postgres** (a separate `mandarin` database), not a second
+  DB engine.
+- **Whisper is the only real cost**, and it's controllable: run the `base` model
+  **lazily / per-request** so it borrows ~400 MB for a ~2-second burst on CPU
+  that's 97% idle, rather than holding a warm worker. A **2 GB swapfile** on the 60
+  GB disk is the safety net; the model size is env-configurable and degrades to
+  `tiny` if RAM is ever tight.
+- Scaling caveat: CPU Whisper is fine for Ethan + early users. Many *strangers*
+  transcribing at once would need a rethink (batching, a queue, or GPU) — a
+  good-problem-later, logged not solved.
 
 ## How the pieces connect
 
 ```
-(root)      the Svelte practice app (SRS, listening, tone, writing, selection)
-backend/    the Cloudflare Worker: encrypted sync + Character subgraph + audio serving
-factory/    the Python pipeline: tutor-PDF → cards, and offline audio generation
+Svelte app ──┬─→ mandarin-api on Lightsail  (content, accounts, progress, transcription)
+             └─→ Cloudflare Worker + R2      (audio clips: GET /v1/audio/:key)
 ```
 
-- **Content** (cards, units, decks, per-card `audioUrl` and tone contour) is
-  static JSON — `public/mandarin-source.json` — built by the factory + HSK
-  scripts, shipped with the app. Fast, offline, permanent in git and the deploy.
-  Selection runs **client-side** over this; no content database is needed.
-- **Audio** is prebuilt MP3s in **R2**, referenced by a stable per-card URL.
-- **Progress** stays as-is: local-first, with optional client-encrypted sync on
-  the Worker + KV (see "The backend").
+- **mandarin-api** (new, `server/`): **FastAPI** on the box — chosen to match the
+  box's Python tooling and the Whisper bindings. SQLAlchemy/asyncpg over the reused
+  Postgres. Deployed as another docker-compose service beside CCP Signal.
+- **Cloudflare Worker + R2 stays** for audio serving only (`/v1/audio/:key`, $0,
+  edge-cached, works). Its **encrypted-sync `/v1/blob` route is retired** once
+  server-owned progress lands. The `Character` GraphQL subgraph can stay on the
+  Worker for now; its final home is a later call.
+- **factory/** (Python pipeline) still turns tutor-lesson PDFs into cards and
+  generates audio offline; its output now **seeds the DB** instead of shipping as
+  the live content file.
 
-**The factory feeds the app.** `factory/` turns tutor lesson PDFs into cards and
-generates audio. The HSK 1–3 deck comes from `scripts/build-hsk-corpus.mjs`
-(Complete HSK Vocabulary dataset). The Preply track comes from the factory
-(`ingest → extract → author cards → validate → export`). A **merge** step (never a
-bare `export`, which overwrites the HSK corpus) combines them into one
-`mandarin-source.json` with each as its own unit; an **audio** step then
-generates clips, uploads them to R2, and injects `audioUrl` + contour into every
-card.
+## Auth & data
 
-```
-tutor PDF ─┐
-           ├─ factory ─→ merge ─→ audio-gen (R2) ─→ public/mandarin-source.json ─→ app
-HSK dataset ┘
-```
+- **Accounts:** email + password, hashed with **argon2id**; signed session tokens
+  (httponly cookie or bearer). Magic-link is a possible later upgrade.
+- **Progress:** server-owned, keyed to the account (per-card SRS state, day
+  streaks, counts). The client caches locally for responsiveness but the server is
+  authoritative — the reverse of the old model.
+- **Audio for transcription:** uploaded, transcribed, **discarded** — not stored.
 
-## Pronunciation — how the rebuild works
+## Pronunciation
 
-- **Now (tone contour vs. native reference).** Each prebuilt reference clip's
-  pitch contour is extracted offline and shipped with the card. At runtime the
-  app records your mic, extracts your pitch contour in-browser (reusing the
-  autocorrelation pitch detector already in `mandarinToneAssessment.ts`), aligns
-  it to the reference per syllable, and scores tone shape. This replaces scoring
-  against *idealized* tone shapes with scoring against a real spoken reference.
-  Feedback stays honest and hedged: guidance, not a grade; your self-rating is
-  still the primary signal.
-- **Word recognition — built (opt-in).** To check you said the *right word*, an
-  in-browser **Whisper** (`onnx-community/whisper-base` via transformers.js,
-  `mandarinWhisper.ts`) transcribes the recording and the existing
-  `comparePronunciation` alignment marks the characters. It is **opt-in and
-  lazy**: the runtime and model (~230 MB, cached) download only when the learner
-  turns on "word check", then everything runs on-device — $0, private, works in
-  every browser (unlike the flaky Web Speech API it replaces). Whisper output is
-  normalized traditional→simplified (opencc-js) before comparison.
-  - *WASM constraints (learned the hard way):* the 4-bit block-quantized decoders
-    (q4/q8/int8) fail to create a session in onnxruntime-web ("Missing required
-    scale … MatMulNBits"), and the fp16 decoder hangs; only a **quantized encoder
-    + fp32 decoder** loads reliably in WASM. That's why the download is large.
-  - *Future:* a WebGPU path (Chrome/Edge desktop) could use the small q4 decoder
-    and cut the download a lot; and tone-contour feedback remains the always-on,
-    no-download signal so word check is never required.
+- **Tone contour vs. native reference (always on, client-side).** Each prebuilt
+  reference clip's pitch contour ships with the card (`public/mandarin-contours.json`,
+  scored in `mandarinToneReference.ts`). At runtime the app records the mic,
+  extracts the learner's contour in-browser, aligns per syllable, and scores tone
+  shape. Works in every browser, no upload, no download. Feedback stays honest and
+  hedged — guidance, not a grade; self-rating stays primary.
+- **Word recognition (server-side).** `POST /v1/transcribe` on mandarin-api runs
+  faster-whisper over the uploaded clip; the existing `comparePronunciation`
+  alignment marks the characters. Replaces the on-device Whisper path entirely.
 
-## The backend
+## Later threads
 
-A single small Cloudflare Worker (`backend/`, TypeScript, free tier, ~$0) with
-three jobs:
-
-### Job 1 — Encrypted progress sync
-Practice on a laptop, continue on a phone, with **no accounts**. The client is
-authoritative; the server is a dumb blob store. The progress snapshot is
-encrypted in the browser (WebCrypto AES-GCM, key from PBKDF2) before it leaves the
-device — the server stores an opaque blob it can't read. Identity is a
-high-entropy **sync code** (bearer secret) that derives a non-secret blob id and
-the encryption key by domain-separated hashing. Devices reconcile by a field-aware
-merge (per-card: keep the more-progressed state; days: union; counts: max), never
-a clobber. Transport: plain REST (`/v1/blob/:id`). *Live at
-`https://mandarin-backend.ethanadams.workers.dev`.*
-
-### Job 2 — Audio serving (2026-08-19)
-`GET /v1/audio/:key` streams a prebuilt clip from the `mandarin-audio` R2 bucket
-with long `Cache-Control` and permissive CORS, edge-cached so repeat plays don't
-re-read R2. This is the app's audio origin.
-
-### Job 3 — The `Character` subgraph (federation)
-A typed, read-only, corpus-derived graph at `/graphql` (no user data, no
-database). Exposes `Character` (`@key(fields: "hanzi")`) and HSK stats, ready to
-federate into a portfolio supergraph beside Draw and Loupe. Progress stays
-encrypted and private — deliberately *not* in the graph.
-
-## Later threads (real, but after the rethink lands)
-
-- **Writing practice** (draw characters, score stroke order via hanzi-writer /
-  Make Me a Hanzi). A `WritingPractice` component exists; the reusable ink-capture
-  concept mirrors the Draw app (`../liveboard`).
-- **Federation.** `Character` becomes a shared entity Mandarin owns and Draw
-  references, so a portfolio homepage runs one supergraph query across Draw,
-  Loupe, and Mandarin.
+- **Writing practice** — draw characters, score stroke order (hanzi-writer / Make
+  Me a Hanzi). A `WritingPractice` component exists.
+- **Federation** — `Character` as a shared entity Mandarin owns and Draw
+  references, so a portfolio homepage runs one supergraph query across Draw, Loupe,
+  and Mandarin.
 
 ## Roadmap (in order; each step ships value on its own)
 
-1. **Prebuilt stored audio** — offline generation, R2 upload, Worker serving,
-   per-card `audioUrl`; retire in-browser Kokoro/onnxruntime synthesis. *In
-   progress (this rethink).*
-2. **Preply track** — ingest the ~29 tutor-lesson PDFs, author cards, merge as a
-   distinct unit. *In progress (this rethink).*
-3. **Selection screen** — pick HSK level / unit / Preply track before a session.
-   *In progress (this rethink).*
-4. **Pronunciation v1** — tone contour vs. native reference. *In progress (this
-   rethink).*
-5. **Pronunciation v2** — in-browser Whisper word recognition. *Done (opt-in).*
-6. **Writing-practice + federation** threads. *Later.*
+Detailed plan in `docs/BUILD-PLAN.md`. Headline sequence:
+
+0. **Box access + service skeleton** — SSH/deploy access; `server/` FastAPI
+   skeleton; docker-compose service on the box; reuse Postgres (`mandarin` DB);
+   health endpoint; 2 GB swapfile. *Scaffold buildable now; deploy blocked on SSH.*
+1. **Content API** — seed 3,222 cards into Postgres; `GET /v1/content`; app
+   `deck.ts` fetches from the API with the JSON as cached fallback.
+2. **Transcription endpoint** — `POST /v1/transcribe`; wire the tone coach to
+   upload; remove `mandarinWhisper.ts` + transformers.js/opencc.
+3. **Accounts + server progress** — auth; progress tables; app login + server
+   progress; retire encrypted-sync `/v1/blob`.
+4. **Cleanup / federation** — decide the `Character` subgraph home; tidy the
+   Worker down to audio-only.
 
 ## Guardrails
 
-- **No monthly costs.** Free tiers and local compute only. R2 (under free tier)
-  and the Cloudflare Worker are the deliberate, justified $0 exceptions.
-- **Local-first stays sacred.** The client is always the source of truth; the app
-  must keep working fully offline. Audio degrades to the browser voice when the
-  network or a clip is unavailable; it must never hard-fail to silence without
-  saying so.
-- **Privacy stays sacred.** Progress is encrypted client-side; the server never
-  sees plaintext or PII.
-- **Honest feedback.** Unvalidated metrics are shown as experimental and hedged;
-  manual self-rating stays primary. No fake polish, no shipping unvalidated
-  feedback to look done.
+- **No *new* monthly costs.** Reuse the already-paid Lightsail box, reuse its
+  Postgres, keep audio on the R2 free tier. No new paid services without explicit
+  justification to Ethan first.
+- **Honest feedback stays sacred.** Unvalidated metrics are shown as experimental
+  and hedged; manual self-rating stays primary. No fake polish.
+- **Be honest about data.** Accounts and server-owned progress mean the server now
+  holds real user data; uploaded audio is transcribed then discarded. Tell users
+  plainly what leaves the device. No third-party data sale, ever.
+- **Degrade, don't lie.** If content or audio can't load, say so; never hard-fail
+  to silence or a blank screen without explanation.
 
 ## Correction log
 
-- **2026-08-19:** A prior VISION claimed "prebuilt audio DONE" and that HSK cards
-  shipped with self-hosted audio. Untrue — `public/` shipped **zero** audio files
-  and every card synthesized on the fly (browser voice or in-browser Kokoro). The
-  2026-08-19 rethink makes prebuilt stored audio actually real. Tone/pronunciation
-  was likewise not a working engine (it silently no-oped when the browser lacked
-  the Web Speech API); the contour-vs-reference rebuild replaces it.
+- **2026-08-20:** Full pivot. This VISION previously made **local-first, no
+  accounts, client-as-source-of-truth, client-side-encrypted privacy, and
+  static-JSON content** load-bearing guardrails. Ethan retired all of them in favor
+  of accounts + server-owned state + server DB content + server transcription on the
+  existing Lightsail box. The old prebuilt-audio (R2) and tone-contour work carry
+  forward; the encrypted-sync path and on-device Whisper are on the way out.
+- **2026-08-19:** A prior VISION claimed "prebuilt audio DONE" — untrue at the time;
+  the 2026-08-19 rethink made prebuilt R2 audio and contour-vs-reference
+  pronunciation actually real (both carried forward here).
