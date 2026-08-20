@@ -64,10 +64,18 @@ Svelte app ──┬─→ mandarin-api (FastAPI, Lightsail portfolio-backend)
   mandarin-api). Trim the Worker to audio-only. Revisit Whisper scaling if usage
   grows.
 
-## What proceeds now, blocked or not
+## Status (2026-08-20)
 
-Build order while SSH is pending: scaffold `server/` (Phase 0 🟢), then write the
-content API + seed (Phase 1 🟢) and transcription endpoint (Phase 2 🟢) with local
-Postgres + pytest, and stage the app-side changes behind an `API_BASE` env so
-nothing breaks until the box is live. Deploy all of it in one pass once access
-lands.
+- **Phase 0** — `server/` FastAPI scaffold + `/health` + smoke test. ✅ code-complete.
+- **Phase 1** — content tables, `seed_payload` + `scripts/seed_content.py` (real
+  corpus seeds 4 units / 3222 cards), `GET /v1/content`; app `deck.ts` fetches the
+  API with the bundled JSON as fallback. ✅ code-complete, tests green.
+- **Phase 2** — `POST /v1/transcribe` (faster-whisper, lazy, threadpool, t2s);
+  app uploads the clip; `mandarinWhisper.ts` deleted, `@huggingface/transformers`
+  + `opencc-js` dropped. ✅ code-complete, tests green.
+- 🔴 **All of Phase 0–2 is undeployed** — waiting on SSH to the box. Nothing is
+  live yet; the app still runs on bundled content because `API_BASE` is unset.
+- **Phase 3** (accounts + server progress) — not started; next buildable chunk.
+
+Recommended next: **unblock SSH and deploy Phases 0–2** to validate the whole
+stack against the real box before building Phase 3 on top of undeployed code.
