@@ -36,8 +36,11 @@ import {
   contourFromFrames,
   type ContourComparison,
 } from '../../utils/mandarinToneReference';
+import { loadWhisper, recognizeMandarin, whisperRequested, type WhisperProgress } from '../../utils/mandarinWhisper';
 import { characterUnits, type CharacterUnit } from '../logic/pinyin';
 import type { Card } from '../logic/deck';
+
+export type WhisperState = 'off' | 'loading' | 'ready' | 'transcribing' | 'error';
 
 /** Reference pitch contours per answerZh, extracted offline from the native
  * clips (factory scripts/gen_contours.py) and shipped as a static JSON. */
@@ -95,9 +98,17 @@ export class ToneCoachController {
   /** How the learner's last take compared to the native reference clip. */
   nativeMatch = $state<ContourComparison | null>(null);
   nativeSyllables = $state<ContourComparison[]>([]);
+  /** Opt-in word recognition (in-browser Whisper): checks you said the right
+   * word, not just the right tone. */
+  wordCheckEnabled = $state(false);
+  whisperState = $state<WhisperState>('off');
+  whisperProgress = $state(0);
+  whisperDetail = $state('');
 
   #contours = $state<Record<string, number[]> | null>(null);
   #contoursRequested = false;
+  #recorder: MediaRecorder | null = null;
+  #recordedChunks: Blob[] = [];
   #recognitionInstance: SpeechRecognitionLike | null = null;
   #micRequestSeq = 0;
   #audioContext: AudioContext | null = null;
@@ -267,6 +278,82 @@ export class ToneCoachController {
     return this.#contours[card.answerZh] ?? null;
   }
 
+  /** Turn on word recognition, downloading the Whisper model once (cached after). */
+  async enableWordCheck() {
+    if (this.whisperState === 'loading') return;
+    this.whisperState = 'loading';
+    this.whisperProgress = 0;
+    this.whisperDetail = 'Downloading the recognition model (one time)…';
+    try {
+      await loadWhisper((p: WhisperProgress) => {
+        if (typeof p.progress === 'number') this.whisperProgress = Math.round(p.progress);
+        this.whisperDetail = `Downloading model… ${Math.round(p.progress ?? 0)}%`;
+      });
+      this.whisperState = 'ready';
+      this.wordCheckEnabled = true;
+      this.whisperDetail = 'Word check on — speak and it reads back what you said.';
+    } catch (error) {
+      this.whisperState = 'error';
+      this.whisperDetail = error instanceof Error ? error.message : 'Could not load the recognition model.';
+    }
+  }
+
+  disableWordCheck() {
+    this.wordCheckEnabled = false;
+    this.whisperState = whisperRequested() ? 'ready' : 'off';
+    this.whisperDetail = '';
+  }
+
+  #stopRecorder() {
+    if (this.#recorder && this.#recorder.state !== 'inactive') {
+      try {
+        this.#recorder.stop();
+      } catch {
+        // Already stopped.
+      }
+    }
+  }
+
+  async #decodeBlob(blob: Blob): Promise<{ samples: Float32Array; sampleRate: number }> {
+    const buffer = await blob.arrayBuffer();
+    const audioContext = new AudioContext();
+    try {
+      const audioBuffer = await audioContext.decodeAudioData(buffer);
+      return { samples: new Float32Array(audioBuffer.getChannelData(0)), sampleRate: audioBuffer.sampleRate };
+    } finally {
+      void audioContext.close();
+    }
+  }
+
+  async #runWordCheck(cardId: string) {
+    const chunks = this.#recordedChunks;
+    this.#recorder = null;
+    this.#recordedChunks = [];
+    if (!chunks.length) return;
+    const blob = new Blob(chunks, { type: chunks[0].type || 'audio/webm' });
+    if (!blob.size) return;
+
+    this.whisperState = 'transcribing';
+    this.whisperDetail = 'Reading back what you said…';
+    try {
+      const { samples, sampleRate } = await this.#decodeBlob(blob);
+      const transcript = await recognizeMandarin(samples, sampleRate);
+      const card = this.#getCard();
+      // Transcription is slow; a card change invalidates this result.
+      if (!card || card.id !== cardId) {
+        this.whisperState = 'ready';
+        this.whisperDetail = '';
+        return;
+      }
+      this.recognitionResult = { ...comparePronunciation(card.answerZh, transcript), transcript, confidence: 1 };
+      this.whisperState = 'ready';
+      this.whisperDetail = '';
+    } catch {
+      this.whisperState = 'error';
+      this.whisperDetail = 'Could not transcribe that take — the tone feedback above still holds.';
+    }
+  }
+
   #recognitionConstructor(): SpeechRecognitionConstructor | null {
     if (typeof window === 'undefined') return null;
     const speechWindow = window as Window &
@@ -367,7 +454,8 @@ export class ToneCoachController {
     if (!card) return;
 
     this.reset();
-    this.#startTextRecognition();
+    // Whisper word check (opt-in) replaces the flaky Web Speech path when on.
+    if (!this.wordCheckEnabled) this.#startTextRecognition();
 
     if (!navigator.mediaDevices?.getUserMedia) {
       this.microphoneAvailable = false;
@@ -398,6 +486,23 @@ export class ToneCoachController {
       this.micPending = false;
       this.microphoneAvailable = true;
       this.#audioStream = stream;
+
+      // Capture the raw waveform for Whisper when word check is on.
+      if (this.wordCheckEnabled && this.whisperState === 'ready' && typeof MediaRecorder !== 'undefined') {
+        try {
+          this.#recordedChunks = [];
+          const recorder = new MediaRecorder(stream);
+          recorder.ondataavailable = (event) => {
+            if (event.data.size) this.#recordedChunks.push(event.data);
+          };
+          recorder.onstop = () => void this.#runWordCheck(card.id);
+          this.#recorder = recorder;
+          recorder.start();
+        } catch {
+          // MediaRecorder unsupported here: tone feedback still runs.
+          this.#recorder = null;
+        }
+      }
 
       this.#audioContext = new AudioContext();
       const audioContext = this.#audioContext;
@@ -485,6 +590,17 @@ export class ToneCoachController {
     if (this.#stopTimer !== null) {
       window.clearTimeout(this.#stopTimer);
       this.#stopTimer = null;
+    }
+
+    // Flush the recorder before killing the stream. On a real attempt its
+    // onstop transcribes; on an abort (Reveal) we detach and discard.
+    if (this.#recorder && this.#recorder.state !== 'inactive') {
+      if (!analyze) this.#recorder.onstop = null;
+      this.#stopRecorder();
+      if (!analyze) {
+        this.#recorder = null;
+        this.#recordedChunks = [];
+      }
     }
 
     const frames = this.#capturedFrames;

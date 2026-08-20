@@ -47,8 +47,8 @@
       </div>
     {/if}
   {/if}
-  {#if !toneCoach.textRecognitionAvailable && !toneCoach.toneAssessmentActive && toneCoach.toneAssessment}
-    <small class="native-note">Word recognition isn't available in this browser; tone feedback still works by comparing your pitch to the native audio.</small>
+  {#if !toneCoach.textRecognitionAvailable && !toneCoach.wordCheckEnabled && !toneCoach.toneAssessmentActive && toneCoach.toneAssessment}
+    <small class="native-note">Word recognition isn't available in this browser; tone feedback still works by comparing your pitch to the native audio. Turn on Word check below for on-device recognition that works everywhere.</small>
   {/if}
   {#if tilesRevealed}
     <div class="character-feedback" aria-label="Per-character pronunciation feedback">
@@ -99,6 +99,30 @@
       <small class="tone-experimental-hint">{TONE_FEEDBACK_EXPERIMENTAL_HINT}</small>
     {/if}
   {/if}
+
+  <div class="word-check">
+    {#if toneCoach.whisperState === 'loading'}
+      <div class="word-check-loading">
+        <small>{toneCoach.whisperDetail}</small>
+        <progress max="100" value={toneCoach.whisperProgress}>{toneCoach.whisperProgress}%</progress>
+      </div>
+    {:else if toneCoach.whisperState === 'transcribing'}
+      <small>{toneCoach.whisperDetail}</small>
+    {:else if toneCoach.wordCheckEnabled}
+      <div class="word-check-row">
+        <small><b>Word check on</b> · reads back what you said and checks the characters.</small>
+        <button type="button" onclick={() => toneCoach.disableWordCheck()}>Turn off</button>
+      </div>
+    {:else}
+      <div class="word-check-row">
+        <button type="button" class="word-check-enable" onclick={() => void toneCoach.enableWordCheck()}>Enable word check</button>
+        <small>Checks you said the right word, in any browser. One-time ~230 MB download, then runs on your device — no audio leaves it.</small>
+      </div>
+    {/if}
+    {#if toneCoach.whisperState === 'error'}
+      <small class="word-check-error">{toneCoach.whisperDetail}</small>
+    {/if}
+  </div>
 </div>
 
 <style>
@@ -397,6 +421,58 @@
     color: var(--text-tertiary);
     font-size: 11px;
     line-height: 1.35;
+  }
+
+  .word-check {
+    margin-top: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-primary);
+    display: grid;
+    gap: 5px;
+  }
+
+  .word-check-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .word-check small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    line-height: 1.35;
+  }
+
+  .word-check button {
+    flex: 0 0 auto;
+    padding: 5px 11px;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 760;
+  }
+
+  .word-check-enable {
+    border-color: color-mix(in srgb, var(--mandarin-red) 40%, var(--border-primary)) !important;
+    background: color-mix(in srgb, var(--mandarin-red) 8%, var(--mandarin-raised)) !important;
+    color: var(--mandarin-red) !important;
+  }
+
+  .word-check-loading {
+    display: grid;
+    gap: 4px;
+  }
+
+  .word-check-loading progress {
+    width: 100%;
+    height: 5px;
+    accent-color: var(--mandarin-red);
+  }
+
+  .word-check-error {
+    color: var(--mandarin-gold) !important;
   }
 
   @media (max-width: 560px) {

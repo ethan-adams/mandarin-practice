@@ -38,8 +38,8 @@ Ethan called for a total rethink of three things. This is the standing direction
    **silently no-ops** — so it reads as "not implemented." The rebuild scores your
    spoken **pitch contour against the native reference clip** we now have from the
    prebuilt audio. Deterministic, works in every browser, honest. Word-level
-   recognition ("did you say the right word") is spec'd as the next push, not this
-   one (see Roadmap).
+   recognition ("did you say the right word") is also built now — opt-in
+   in-browser Whisper (see the Pronunciation section).
 
 ### Storage decision record (2026-08-19)
 
@@ -105,12 +105,21 @@ HSK dataset ┘
   against *idealized* tone shapes with scoring against a real spoken reference.
   Feedback stays honest and hedged: guidance, not a grade; your self-rating is
   still the primary signal.
-- **Next (word recognition), spec'd not built.** To check you said the *right
-  word*, run **Whisper-tiny in-browser via `onnxruntime-web`** — already a
-  dependency — lazy-loaded only when you enter pronunciation mode. $0, private, no
-  server, no per-card cost. Fallback if that proves too heavy on phones: a tiny
-  `whisper.cpp` endpoint on the existing Lightsail box ($0 marginal). Kept off the
-  hot path either way; tone-contour feedback is the always-on signal.
+- **Word recognition — built (opt-in).** To check you said the *right word*, an
+  in-browser **Whisper** (`onnx-community/whisper-base` via transformers.js,
+  `mandarinWhisper.ts`) transcribes the recording and the existing
+  `comparePronunciation` alignment marks the characters. It is **opt-in and
+  lazy**: the runtime and model (~230 MB, cached) download only when the learner
+  turns on "word check", then everything runs on-device — $0, private, works in
+  every browser (unlike the flaky Web Speech API it replaces). Whisper output is
+  normalized traditional→simplified (opencc-js) before comparison.
+  - *WASM constraints (learned the hard way):* the 4-bit block-quantized decoders
+    (q4/q8/int8) fail to create a session in onnxruntime-web ("Missing required
+    scale … MatMulNBits"), and the fp16 decoder hangs; only a **quantized encoder
+    + fp32 decoder** loads reliably in WASM. That's why the download is large.
+  - *Future:* a WebGPU path (Chrome/Edge desktop) could use the small q4 decoder
+    and cut the download a lot; and tone-contour feedback remains the always-on,
+    no-download signal so word check is never required.
 
 ## The backend
 
@@ -159,7 +168,7 @@ encrypted and private — deliberately *not* in the graph.
    *In progress (this rethink).*
 4. **Pronunciation v1** — tone contour vs. native reference. *In progress (this
    rethink).*
-5. **Pronunciation v2** — in-browser Whisper word recognition. *Next.*
+5. **Pronunciation v2** — in-browser Whisper word recognition. *Done (opt-in).*
 6. **Writing-practice + federation** threads. *Later.*
 
 ## Guardrails

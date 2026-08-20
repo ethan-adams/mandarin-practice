@@ -31,7 +31,9 @@
     "vitest": "^4.0.4"
   },
   "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
     "ea-design": "github:ethan-adams/ea-design",
-    "hanzi-writer": "^3.7.3"
+    "hanzi-writer": "^3.7.3",
+    "opencc-js": "^1.4.1"
   }
 }
