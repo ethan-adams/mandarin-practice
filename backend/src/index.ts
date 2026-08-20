@@ -4,12 +4,15 @@
 // sync data is end-to-end encrypted and the graph is public read-only corpus
 // data, so there is nothing to protect by origin, and no cookies are ever used.
 
+import { handleAudio, type AudioBucket } from './audio';
 import { handleGraphQL } from './graphql';
 import { handleSync, type BlobKV } from './sync';
 
 export interface Env {
   /** KV namespace binding for the encrypted progress blobs. */
   SYNC: BlobKV;
+  /** R2 bucket binding for prebuilt audio clips. */
+  MANDARIN_AUDIO: AudioBucket;
   /** Optional CORS allow-list origin; defaults to '*'. */
   ALLOW_ORIGIN?: string;
   /** Optional max blob size in bytes (string, from wrangler vars). */
@@ -46,6 +49,9 @@ export default {
     if (pathname === '/graphql') {
       return withCors(await handleGraphQL(request), env);
     }
+
+    const audioResponse = await handleAudio(request, env.MANDARIN_AUDIO);
+    if (audioResponse) return withCors(audioResponse, env);
 
     const maxBlobBytes = env.MAX_BLOB_BYTES ? Number(env.MAX_BLOB_BYTES) : undefined;
     const syncResponse = await handleSync(request, env.SYNC, { maxBlobBytes });

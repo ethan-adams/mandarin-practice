@@ -30,8 +30,18 @@ import {
   type ToneSyllableResult,
 } from '../../utils/mandarinToneAssessment';
 import { contrastPairForPinyin, explainPronunciationEvidence } from '../../utils/mandarinContrastPractice';
+import {
+  compareBySyllable,
+  compareContours,
+  contourFromFrames,
+  type ContourComparison,
+} from '../../utils/mandarinToneReference';
 import { characterUnits, type CharacterUnit } from '../logic/pinyin';
 import type { Card } from '../logic/deck';
+
+/** Reference pitch contours per answerZh, extracted offline from the native
+ * clips (factory scripts/gen_contours.py) and shipped as a static JSON. */
+const CONTOURS_URL = '/mandarin-contours.json';
 
 export type RecognitionState =
   | 'idle'
@@ -82,7 +92,12 @@ export class ToneCoachController {
   toneHintVisible = $state(false);
   liveToneDurationSeconds = $state(0);
   liveSyllableIndex = $state(0);
+  /** How the learner's last take compared to the native reference clip. */
+  nativeMatch = $state<ContourComparison | null>(null);
+  nativeSyllables = $state<ContourComparison[]>([]);
 
+  #contours = $state<Record<string, number[]> | null>(null);
+  #contoursRequested = false;
   #recognitionInstance: SpeechRecognitionLike | null = null;
   #micRequestSeq = 0;
   #audioContext: AudioContext | null = null;
@@ -212,9 +227,44 @@ export class ToneCoachController {
     TONE_FEEDBACK_EXPERIMENTAL && !this.toneAssessmentActive && this.toneAssessment !== null && toneAssessmentHasVerdict(this.toneAssessment),
   );
 
+  /** A native reference contour exists for the card on screen. */
+  referenceAvailable = $derived.by(() => {
+    const answer = this.#getCard()?.answerZh;
+    return Boolean(this.#contours && answer && this.#contours[answer]);
+  });
+
+  /** Plain-language verdict for the last take vs. the native reference. */
+  nativeSummary = $derived.by(() => {
+    if (!this.nativeMatch) return null;
+    if (this.nativeMatch.status === 'matched') return 'Your pitch closely tracked the native audio.';
+    if (this.nativeMatch.status === 'close') return 'Your pitch partly tracked the native audio — replay it and match the melody.';
+    return 'Your pitch differed from the native audio — replay it and follow the tone shape.';
+  });
+
   init() {
     this.microphoneAvailable = Boolean(navigator.mediaDevices?.getUserMedia);
     this.textRecognitionAvailable = Boolean(this.#recognitionConstructor());
+    void this.loadContours();
+  }
+
+  /** Load the native reference contours once, best-effort. Missing data just
+   * turns off the reference comparison; tone capture still works. */
+  async loadContours() {
+    if (this.#contoursRequested) return;
+    this.#contoursRequested = true;
+    try {
+      const response = await fetch(CONTOURS_URL);
+      if (!response.ok) return;
+      const payload = (await response.json()) as { entries?: Record<string, number[]> };
+      if (payload?.entries) this.#contours = payload.entries;
+    } catch {
+      // Offline or missing file: reference comparison stays off, nothing breaks.
+    }
+  }
+
+  #referenceContour(card: Card | null): number[] | null {
+    if (!card || !this.#contours) return null;
+    return this.#contours[card.answerZh] ?? null;
   }
 
   #recognitionConstructor(): SpeechRecognitionConstructor | null {
@@ -251,6 +301,8 @@ export class ToneCoachController {
     this.toneError = '';
     this.liveToneDurationSeconds = 0;
     this.liveSyllableIndex = 0;
+    this.nativeMatch = null;
+    this.nativeSyllables = [];
   }
 
   #startTextRecognition() {
@@ -447,11 +499,26 @@ export class ToneCoachController {
     const card = this.#getCard();
     if (analyze && card) {
       this.stopRecognition();
-      this.toneAssessment = assessToneContours(card.pinyin, assessmentWindow(frames));
+      const windowed = assessmentWindow(frames);
+      this.toneAssessment = assessToneContours(card.pinyin, windowed);
+      // Score the take against the native reference clip's pitch contour when we
+      // have one — the honest, browser-independent signal that works without any
+      // speech-recognition API.
+      const reference = this.#referenceContour(card);
+      if (reference) {
+        const userContour = contourFromFrames(windowed);
+        this.nativeMatch = compareContours(userContour, reference);
+        this.nativeSyllables = compareBySyllable(userContour, reference, expectedToneSyllables(card.pinyin).length);
+      } else {
+        this.nativeMatch = null;
+        this.nativeSyllables = [];
+      }
     } else if (wasActive) {
       // Aborted mid-capture (e.g. Reveal): the interim assessment was computed
       // on partial audio and must not linger as if it were a finished verdict.
       this.toneAssessment = null;
+      this.nativeMatch = null;
+      this.nativeSyllables = [];
     }
   }
 }

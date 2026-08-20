@@ -32,7 +32,6 @@
   },
   "dependencies": {
     "ea-design": "github:ethan-adams/ea-design",
-    "hanzi-writer": "^3.7.3",
-    "onnxruntime-web": "^1.24.3"
+    "hanzi-writer": "^3.7.3"
   }
 }

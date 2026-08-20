@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Turn Mandarin tutor lesson PDFs into call/response practice."
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "numpy>=2.0.2",
+]
 
 [project.optional-dependencies]
 edge = ["edge-tts>=7.0.0"]

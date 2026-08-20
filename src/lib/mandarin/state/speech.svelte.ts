@@ -1,36 +1,26 @@
-// Audio playback for the learning core: prebuilt/neural speech engine
-// lifecycle, per-card voice selection, and the verified browser-voice
-// fallback. Browser speech only counts as available once a Mandarin voice is
-// verified - speaking zh text without one is a silent no-op on most
-// Windows/Linux browsers, and silence must never be reported as success.
+// Audio playback for the learning core. Cards ship a prebuilt, stored clip
+// (card.audioUrl) that plays instantly — no on-the-fly synthesis, no model
+// download (see VISION.md "Prebuilt stored audio"). When a clip is missing or
+// the network is down, playback degrades to the browser's own Chinese voice.
+// Browser speech only counts as available once a Mandarin voice is verified —
+// speaking zh text without one is a silent no-op on most Windows/Linux
+// browsers, and silence must never be reported as success.
 
 import { findMandarinVoice } from '../../utils/mandarinBrowserVoice';
-import {
-  MandarinSpeechEngine,
-  StaleMandarinSpeechRequestError,
-  selectMandarinVoice,
-  type MandarinPlaybackBackend,
-  type MandarinSpeechResult,
-  type MandarinVoice,
-} from '../../utils/mandarinSpeech';
 import type { ContrastCue } from '../../utils/mandarinContrastPractice';
 import type { Card } from '../logic/deck';
 import type { PracticeSettings } from './settings.svelte';
 
-export type SpeechStatus = 'idle' | 'loading' | 'ready' | 'synthesizing' | 'error' | 'fallback';
+export type SpeechStatus = 'idle' | 'playing' | 'ready' | 'error' | 'fallback' | 'muted';
 
 export class SpeechController {
   status = $state<SpeechStatus>('idle');
   progress = $state(0);
-  detail = $state('Prebuilt audio plays instantly; the neural model covers anything else.');
-  backend = $state<MandarinPlaybackBackend | null>(null);
+  detail = $state('Prebuilt audio plays instantly.');
+  backend = $state<string | null>(null);
   lastAudioVoice = $state('');
 
-  #previousVoice: MandarinVoice | undefined = undefined;
-  #lastSpokenCardId = '';
-  #engine: MandarinSpeechEngine | null = null;
   #currentAudio: HTMLAudioElement | null = null;
-  #currentAudioUrl = '';
 
   readonly #settings: PracticeSettings;
   readonly #getCurrentCard: () => Card | null;
@@ -40,35 +30,34 @@ export class SpeechController {
     this.#getCurrentCard = getCurrentCard;
   }
 
-  #ensureEngine() {
-    this.#engine ??= new MandarinSpeechEngine((event) => {
-      if (event.type === 'loading') {
-        this.status = 'loading';
-        this.progress = event.progress;
-        this.detail = event.detail;
-      } else if (event.type === 'ready') {
-        this.status = 'ready';
-        this.backend = event.backend;
-        this.detail = event.backend === 'prebuilt' ? 'Prebuilt audio ready.' : `${event.backend.toUpperCase()} neural speech ready.`;
-      } else if (event.type === 'synthesizing') {
-        this.status = 'synthesizing';
-        this.detail = `Generating ${event.voice} on this device…`;
-      } else {
-        this.status = 'error';
-        this.detail = event.message;
+  #stopCurrent() {
+    if (this.#currentAudio) {
+      this.#currentAudio.pause();
+      this.#currentAudio = null;
+    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  }
+
+  /** Play a stored clip. Resolves true on success, false so the caller can fall
+   * back to the browser voice (missing clip, autoplay block, network error). */
+  async #playUrl(url: string, stillWanted: () => boolean): Promise<boolean> {
+    try {
+      const audio = new Audio(url);
+      this.#currentAudio = audio;
+      this.status = 'playing';
+      await audio.play();
+      if (!stillWanted()) {
+        audio.pause();
+        return true;
       }
-    });
-    return this.#engine;
-  }
-
-  #releaseAudioUrl() {
-    if (this.#currentAudioUrl) URL.revokeObjectURL(this.#currentAudioUrl);
-    this.#currentAudioUrl = '';
-  }
-
-  #describePlayback(result: MandarinSpeechResult, kind: 'answer' | 'contrast') {
-    if (result.backend === 'prebuilt') return `Played prebuilt ${kind === 'contrast' ? 'contrast ' : ''}audio - no download needed.`;
-    return `${result.cached ? 'Replayed cached' : 'Generated'} ${result.backend.toUpperCase()} ${kind === 'contrast' ? 'contrast ' : ''}audio.`;
+      this.status = 'ready';
+      this.backend = 'prebuilt';
+      this.lastAudioVoice = 'native (prebuilt)';
+      this.detail = 'Played prebuilt audio — no download needed.';
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async #speakWithBrowserVoice(text: string, detail: string, stillWanted: () => boolean = () => true): Promise<boolean> {
@@ -76,7 +65,7 @@ export class SpeechController {
     const voice = synth ? await findMandarinVoice(synth) : null;
     if (!stillWanted()) return true;
     if (!synth || !voice) {
-      this.status = 'error';
+      this.status = 'muted';
       this.detail = 'No Chinese voice is available in this browser, so audio is muted. Practice and manual ratings still work.';
       return false;
     }
@@ -89,11 +78,12 @@ export class SpeechController {
     utterance.onerror = (event) => {
       if (event.error === 'interrupted' || event.error === 'canceled') return;
       this.status = 'error';
-      this.detail = 'The browser voice failed to play. Retry neural speech when ready.';
+      this.detail = 'The browser voice failed to play.';
     };
     this.lastAudioVoice = `browser · ${voice.name}`;
+    this.backend = 'browser';
     this.status = 'fallback';
-    this.detail = `Using the browser voice (${voice.name})${detail}. Retry neural speech when ready.`;
+    this.detail = `Using the browser voice (${voice.name})${detail}.`;
     synth.speak(utterance);
     return true;
   }
@@ -101,41 +91,12 @@ export class SpeechController {
   async speakAnswer() {
     const card = this.#getCurrentCard();
     if (!card) return;
-    this.#currentAudio?.pause();
-    this.#releaseAudioUrl();
+    this.#stopCurrent();
+    const stillWanted = () => this.#getCurrentCard()?.id === card.id;
 
-    // No neural phonemes for this card (e.g. the HSK vocabulary corpus): the
-    // neural engine has nothing to synthesize, so speak the hanzi with the
-    // browser voice directly instead of loading the model to no purpose.
-    const phonemes = card.speechPhonemes;
-    if (!phonemes) {
-      await this.speakAnswerFallback(card);
-      return;
-    }
-
-    const voice =
-      this.#lastSpokenCardId === card.id && this.#previousVoice
-        ? this.#previousVoice
-        : selectMandarinVoice(card.id, this.#settings.voiceMode, this.#settings.singleVoice, this.#previousVoice);
-    this.lastAudioVoice = voice;
-
-    try {
-      const result = await this.#ensureEngine().synthesize(card.id, phonemes, voice);
-      if (this.#getCurrentCard()?.id !== card.id) return;
-      this.#previousVoice = result.voice;
-      this.#lastSpokenCardId = card.id;
-      this.backend = result.backend;
-      this.status = 'ready';
-      this.progress = 100;
-      this.detail = this.#describePlayback(result, 'answer');
-      this.#currentAudioUrl = URL.createObjectURL(new Blob([result.audio], { type: result.mime }));
-      this.#currentAudio = new Audio(this.#currentAudioUrl);
-      await this.#currentAudio.play();
-    } catch (error) {
-      if (error instanceof StaleMandarinSpeechRequestError) return;
-      this.detail = error instanceof Error ? error.message : 'Neural speech failed.';
-      await this.speakAnswerFallback(card);
-    }
+    if (card.audioUrl && (await this.#playUrl(card.audioUrl, stillWanted))) return;
+    // No stored clip, or it failed to play: speak the hanzi with the browser voice.
+    await this.speakAnswerFallback(card);
   }
 
   async speakAnswerFallback(card = this.#getCurrentCard()) {
@@ -144,47 +105,27 @@ export class SpeechController {
   }
 
   async playContrastCue(cue: ContrastCue, options: { onAudioUnavailable?: () => void } = {}) {
-    this.#currentAudio?.pause();
-    this.#releaseAudioUrl();
-    const voice = selectMandarinVoice(`contrast:${cue.id}`, this.#settings.voiceMode, this.#settings.singleVoice);
-    this.lastAudioVoice = voice;
-
-    try {
-      const result = await this.#ensureEngine().synthesize(`contrast:${cue.id}`, cue.speechPhonemes, voice);
-      this.backend = result.backend;
-      this.status = 'ready';
-      this.progress = 100;
-      this.detail = this.#describePlayback(result, 'contrast');
-      this.#currentAudioUrl = URL.createObjectURL(new Blob([result.audio], { type: result.mime }));
-      this.#currentAudio = new Audio(this.#currentAudioUrl);
-      await this.#currentAudio.play();
-      return true;
-    } catch (error) {
-      if (error instanceof StaleMandarinSpeechRequestError) return false;
-      this.detail = error instanceof Error ? error.message : 'Neural contrast speech failed.';
-      if (await this.#speakWithBrowserVoice(cue.han, ' for this contrast')) return true;
-      this.detail = 'No Chinese browser voice is available, so contrast audio is muted. You can reveal the answer or continue card practice.';
-      options.onAudioUnavailable?.();
-      return false;
-    }
+    this.#stopCurrent();
+    if (cue.audioUrl && (await this.#playUrl(cue.audioUrl, () => true))) return true;
+    if (await this.#speakWithBrowserVoice(cue.han, ' for this contrast')) return true;
+    this.detail = 'No Chinese browser voice is available, so contrast audio is muted. You can reveal the answer or continue card practice.';
+    options.onAudioUnavailable?.();
+    return false;
   }
 
+  /** Retry playing the current answer (kept for the sidebar control). */
   retryNeuralSpeech() {
-    this.#engine?.dispose();
-    this.#engine = null;
     this.status = 'idle';
     this.progress = 0;
     void this.speakAnswer();
   }
 
+  /** No persistent cache to clear now that audio is served as stored URLs. */
   clearCache() {
-    this.#engine?.clearCache();
-    this.detail = 'Generated answer cache cleared.';
+    this.detail = 'Audio is served from stored clips; nothing to clear.';
   }
 
   dispose() {
-    this.#currentAudio?.pause();
-    this.#releaseAudioUrl();
-    this.#engine?.dispose();
+    this.#stopCurrent();
   }
 }

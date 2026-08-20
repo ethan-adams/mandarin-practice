@@ -55,10 +55,10 @@ describe('optional speechPhonemes: corpus loading', () => {
     expect(loaded.cardCount).toBe(parsed.card_count);
     expect(loaded.cards.length).toBe(parsed.card_count);
     expect(loaded.cards.length).toBeGreaterThan(1000);
-    // A browser-voice corpus: not one card carries neural phonemes.
+    // A prebuilt-audio corpus: not one card carries neural phonemes.
     expect(loaded.cards.every((card: Card) => card.speechPhonemes === undefined)).toBe(true);
-    // One unit per HSK level, in order.
-    expect(loaded.units?.map((unit) => unit.title)).toEqual(['HSK 1', 'HSK 2', 'HSK 3']);
+    // HSK levels in order, then the Preply tutor-lesson track.
+    expect(loaded.units?.map((unit) => unit.title)).toEqual(['HSK 1', 'HSK 2', 'HSK 3', 'Preply Tutoring']);
     expect(loaded.units?.every((unit) => unit.lessons.length > 0)).toBe(true);
   });
 

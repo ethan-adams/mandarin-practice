@@ -1,6 +1,5 @@
 <script lang="ts">
   import { MANDARIN_CONTRAST_PAIRS } from '../../utils/mandarinContrastPractice';
-  import { MANDARIN_VOICES } from '../../utils/mandarinSpeech';
   import { lessonLabel } from '../logic/lessons';
   import type { PracticeSession, Mode } from '../state/session.svelte';
   import type { PracticeSettings } from '../state/settings.svelte';
@@ -33,7 +32,7 @@
 <aside class="lesson-panel" aria-label="Practice controls and cards">
   <div class="panel-section scope-row">
     <button class="back-button" onclick={onGoHome}>← Course</button>
-    <span class="scope-label">{session.lessonFilter ? lessonLabel(session.lessonFilter) : 'All lessons'}</span>
+    <span class="scope-label">{session.scopeLabel || 'All lessons'}</span>
   </div>
 
   <div class="panel-section">
@@ -53,38 +52,15 @@
 
   <div class="voice-panel">
     <div class="voice-heading">
-      <span>On-device neural speech</span>
-      <strong>{speech.lastAudioVoice || 'Loads on first answer'}</strong>
-    </div>
-    <div class="voice-controls">
-      <label>
-        Voice mode
-        <select bind:value={settings.voiceMode}>
-          <option value="variety">Variety</option>
-          <option value="single">Single voice</option>
-        </select>
-      </label>
-      {#if settings.voiceMode === 'single'}
-        <label>
-          Voice
-          <select bind:value={settings.singleVoice}>
-            {#each MANDARIN_VOICES as voice}
-              <option value={voice}>{voice}</option>
-            {/each}
-          </select>
-        </label>
-      {/if}
+      <span>Answer audio</span>
+      <strong>{speech.lastAudioVoice || 'Plays on first answer'}</strong>
     </div>
     <div class="speech-state" data-status={speech.status} aria-live="polite">
       <small>{speech.detail}</small>
-      {#if speech.status === 'loading'}
-        <progress max="100" value={speech.progress}>{speech.progress}%</progress>
-      {/if}
       <div class="speech-actions">
-        {#if speech.status === 'error' || speech.status === 'fallback'}
-          <button onclick={() => speech.retryNeuralSpeech()}>Retry neural</button>
+        {#if speech.status === 'error' || speech.status === 'fallback' || speech.status === 'muted'}
+          <button onclick={() => speech.retryNeuralSpeech()}>Retry</button>
         {/if}
-        <button onclick={() => speech.clearCache()}>Clear cache</button>
       </div>
     </div>
   </div>
@@ -257,36 +233,6 @@
     text-align: right;
   }
 
-  .voice-controls {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
-    margin-top: 4px;
-  }
-
-  .voice-controls label {
-    display: grid;
-    gap: 4px;
-    color: var(--text-muted);
-    font-size: 10px;
-    font-weight: 760;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .voice-controls select {
-    width: 100%;
-    min-height: 32px;
-    padding: 0 7px;
-    border: 1px solid var(--border-primary);
-    border-radius: 5px;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    font: inherit;
-    letter-spacing: normal;
-    text-transform: none;
-  }
-
   .speech-state {
     display: grid;
     gap: 6px;
@@ -300,14 +246,9 @@
   }
 
   .speech-state[data-status='error'] small,
-  .speech-state[data-status='fallback'] small {
+  .speech-state[data-status='fallback'] small,
+  .speech-state[data-status='muted'] small {
     color: var(--mandarin-gold);
-  }
-
-  .speech-state progress {
-    width: 100%;
-    height: 5px;
-    accent-color: var(--mandarin-red);
   }
 
   .speech-actions {

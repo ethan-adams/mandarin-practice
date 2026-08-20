@@ -6,6 +6,8 @@ export type ContrastCue = {
   pinyin: string;
   gloss: string;
   speechPhonemes: string;
+  // Optional prebuilt clip; contrast cues currently use the browser voice.
+  audioUrl?: string;
 };
 
 export type ContrastPair = {

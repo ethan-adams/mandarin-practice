@@ -9,6 +9,11 @@ compatibility_date = "2024-09-01"
 binding = "SYNC"
 id = "49788b685fc84d9eab46c2e711b8f15c"
 
+# Prebuilt audio clips, served by GET /v1/audio/:key (see src/audio.ts).
+[[r2_buckets]]
+binding = "MANDARIN_AUDIO"
+bucket_name = "mandarin-audio"
+
 [vars]
 # ALLOW_ORIGIN = "https://mandarin.ethanadams.dev"  # tighten in production if desired
 MAX_BLOB_BYTES = "262144"

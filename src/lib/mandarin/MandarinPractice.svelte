@@ -171,6 +171,7 @@
       {session}
       onContinue={() => session.startContinue()}
       onStartUnit={(lessonId) => session.startUnit(lessonId)}
+      onStartSection={(lessonIds, label) => session.startSection(lessonIds, label)}
       onQuickMode={(mode) => session.startGlobal(mode)}
       onShowListening={() => session.showListeningPractice()}
     />

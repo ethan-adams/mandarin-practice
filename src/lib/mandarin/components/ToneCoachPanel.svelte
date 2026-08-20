@@ -34,6 +34,22 @@
     <strong>{toneCoach.recognitionLabel}</strong>
   </div>
   <small class:tone-experimental-detail={toneCoach.detailExperimental}>{toneCoach.recognitionDetail}</small>
+  {#if toneCoach.nativeMatch && !toneCoach.toneAssessmentActive}
+    <div class="native-compare" data-status={toneCoach.nativeMatch.status}>
+      <span class="native-dot" aria-hidden="true"></span>
+      <small>{toneCoach.nativeSummary}</small>
+    </div>
+    {#if toneCoach.nativeSyllables.length > 1}
+      <div class="native-syllables" aria-label="Per-syllable pitch match against the native audio">
+        {#each toneCoach.nativeSyllables as segment}
+          <span data-status={segment.status}></span>
+        {/each}
+      </div>
+    {/if}
+  {/if}
+  {#if !toneCoach.textRecognitionAvailable && !toneCoach.toneAssessmentActive && toneCoach.toneAssessment}
+    <small class="native-note">Word recognition isn't available in this browser; tone feedback still works by comparing your pitch to the native audio.</small>
+  {/if}
   {#if tilesRevealed}
     <div class="character-feedback" aria-label="Per-character pronunciation feedback">
       {#each toneCoach.characterFeedback as unit}
@@ -317,6 +333,70 @@
 
   .tone-summary span[data-status='pending'] {
     background: color-mix(in srgb, var(--text-tertiary) 30%, transparent);
+  }
+
+  .native-compare {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .native-dot {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--border-primary);
+  }
+
+  .native-compare[data-status='matched'] .native-dot {
+    background: #2f7d52;
+  }
+
+  .native-compare[data-status='close'] .native-dot {
+    background: var(--mandarin-gold);
+  }
+
+  .native-compare[data-status='missed'] .native-dot {
+    background: var(--mandarin-red-dark);
+  }
+
+  .native-compare small {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 720;
+  }
+
+  .native-syllables {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 4px;
+    margin-top: 2px;
+  }
+
+  .native-syllables span {
+    height: 5px;
+    border-radius: 5px;
+    background: var(--border-primary);
+  }
+
+  .native-syllables span[data-status='matched'] {
+    background: #2f7d52;
+  }
+
+  .native-syllables span[data-status='close'] {
+    background: var(--mandarin-gold);
+  }
+
+  .native-syllables span[data-status='missed'] {
+    background: var(--mandarin-red-dark);
+  }
+
+  .native-note {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    line-height: 1.35;
   }
 
   @media (max-width: 560px) {

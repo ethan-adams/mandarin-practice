@@ -96,9 +96,9 @@
           class="speak-button"
           onclick={() => void speech.speakAnswer()}
           aria-label="Replay answer"
-          disabled={speech.status === 'loading' || speech.status === 'synthesizing'}
+          disabled={speech.status === 'playing'}
         >
-          {speech.status === 'loading' || speech.status === 'synthesizing' ? '…' : '▶'}
+          {speech.status === 'playing' ? '…' : '▶'}
         </button>
       </div>
       {#if speech.lastAudioVoice}

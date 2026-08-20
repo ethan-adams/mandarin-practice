@@ -17,6 +17,7 @@ import {
   type Rating,
 } from '../logic/srs';
 import { loadPracticeDays, recordPracticeDay, savePracticeDays } from '../logic/sessionStats';
+import { lessonLabel } from '../logic/lessons';
 
 export type Mode = 'due' | 'new' | 'all';
 export type PracticeView = 'home' | 'cards' | 'listening' | 'summary';
@@ -38,8 +39,11 @@ export class PracticeSession {
   practiceView = $state<PracticeView>('home');
   currentIndex = $state(0);
   showAnswer = $state(false);
-  /** When set, practice is scoped to a single lesson/unit. */
-  lessonFilter = $state<string | null>(null);
+  /** When set, practice is scoped to these lesson ids (one lesson, a whole HSK
+   * level, or the Preply track). Null means the whole deck. */
+  scopeLessons = $state<Set<string> | null>(null);
+  /** Human label for the current scope, shown in the sidebar. */
+  scopeLabel = $state('');
   /** True while a bounded practice session (started from the course) runs. */
   sessionActive = $state(false);
   /** Ratings given this session, in order. */
@@ -103,9 +107,9 @@ export class PracticeSession {
     return isDue(this.reviewState[card.id]);
   }
 
-  cardsForMode(nextMode = this.mode, lessonFilter = this.lessonFilter) {
+  cardsForMode(nextMode = this.mode, scope = this.scopeLessons) {
     return this.cards.filter((card) => {
-      if (lessonFilter && card.lessonId !== lessonFilter) return false;
+      if (scope && !scope.has(card.lessonId)) return false;
       const item = this.reviewState[card.id];
       if (nextMode === 'new') return !item || item.attempts === 0;
       if (nextMode === 'due') return this.due(card);
@@ -149,19 +153,31 @@ export class PracticeSession {
 
   /** Course home "Continue": the whole deck, due-first when anything is due. */
   startContinue() {
-    this.lessonFilter = null;
+    this.scopeLessons = null;
+    this.scopeLabel = '';
     this.setMode(this.cardsForMode('due', null).length ? 'due' : 'all');
   }
 
-  /** Start practice scoped to one unit, due/new cards first when any exist. */
+  /** Start practice scoped to one lesson, due/new cards first when any exist. */
   startUnit(lessonId: string) {
-    this.lessonFilter = lessonId;
-    this.setMode(this.cardsForMode('due', lessonId).length ? 'due' : 'all');
+    const scope = new Set([lessonId]);
+    this.scopeLessons = scope;
+    this.scopeLabel = lessonLabel(lessonId);
+    this.setMode(this.cardsForMode('due', scope).length ? 'due' : 'all');
+  }
+
+  /** Start practice scoped to a whole level/track (many lessons at once). */
+  startSection(lessonIds: string[], label: string) {
+    const scope = new Set(lessonIds);
+    this.scopeLessons = scope;
+    this.scopeLabel = label;
+    this.setMode(this.cardsForMode('due', scope).length ? 'due' : 'all');
   }
 
   /** Course home quick modes practice the whole deck, never a stale unit scope. */
   startGlobal(mode: Mode) {
-    this.lessonFilter = null;
+    this.scopeLessons = null;
+    this.scopeLabel = '';
     this.setMode(mode);
   }
 
@@ -256,7 +272,8 @@ export class PracticeSession {
     // silently flipping the user into unbounded browsing.
     if (this.sessionActive && this.practiceView !== 'home' && this.currentCard?.id === slug) return;
 
-    this.lessonFilter = null;
+    this.scopeLessons = null;
+    this.scopeLabel = '';
     this.mode = 'all';
     // Deep links browse the whole deck unbounded - no batch summary.
     this.sessionActive = false;
@@ -303,10 +320,11 @@ export class PracticeSession {
     this.deckUnits = corpus.units;
     this.corpusLoaded = true;
     this.corpusLoadFailed = false;
-    if (this.lessonFilter && !corpus.cards.some((card) => card.lessonId === this.lessonFilter)) {
-      // A unit scope referencing a lesson absent from the swapped deck would
-      // leave the practicing user staring at an empty queue.
-      this.lessonFilter = null;
+    if (this.scopeLessons && !corpus.cards.some((card) => this.scopeLessons!.has(card.lessonId))) {
+      // A scope referencing lessons absent from the swapped deck would leave
+      // the practicing user staring at an empty queue.
+      this.scopeLessons = null;
+      this.scopeLabel = '';
     }
     if (previousCardId && !corpus.cards.some((card) => card.id === previousCardId)) {
       // The card being practiced is not in the swapped deck (e.g. a fallback

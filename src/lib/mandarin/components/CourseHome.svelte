@@ -6,12 +6,14 @@
     session,
     onContinue,
     onStartUnit,
+    onStartSection,
     onQuickMode,
     onShowListening,
   }: {
     session: PracticeSession;
     onContinue: () => void;
     onStartUnit: (lessonId: string) => void;
+    onStartSection: (lessonIds: string[], label: string) => void;
     onQuickMode: (mode: Mode) => void;
     onShowListening: () => void;
   } = $props();
@@ -62,8 +64,21 @@
   </nav>
 
   {#each sections as section (section.id)}
+    {@const sectionCards = section.units.flatMap((u) => u.cards)}
+    {@const sp = unitProgress(sectionCards, session.reviewState)}
+    {@const lessonIds = section.units.map((u) => u.meta.id)}
     <section class="unit-section" aria-label={section.title}>
-      <h2>{section.title}</h2>
+      <div class="section-head">
+        <h2>{section.title}</h2>
+        <button
+          class="section-start"
+          onclick={() => onStartSection(lessonIds, section.title)}
+          aria-label={`Practice all of ${section.title}`}
+        >
+          Practice all
+          <span>{sectionCards.length} cards{sp.due ? ` · ${sp.due} due` : ''}</span>
+        </button>
+      </div>
       <div class="unit-grid" class:compact={section.compact}>
         {#each section.units as unit (unit.meta.id)}
           {@const p = progressOf(unit)}
@@ -223,12 +238,49 @@
     gap: 10px;
   }
 
-  .unit-section h2 {
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin: 4px 0 0;
+  }
+
+  .unit-section h2 {
+    margin: 0;
     color: var(--text-primary);
     font-size: 17px;
     font-weight: 840;
     letter-spacing: 0.01em;
+  }
+
+  .section-start {
+    display: grid;
+    justify-items: end;
+    gap: 1px;
+    flex: 0 0 auto;
+    padding: 7px 14px;
+    border: 1px solid color-mix(in srgb, var(--mandarin-red) 40%, var(--border-primary));
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--mandarin-red) 8%, var(--mandarin-raised));
+    color: var(--mandarin-red);
+    font-size: 12px;
+    font-weight: 840;
+    letter-spacing: 0.02em;
+    transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+  }
+
+  .section-start span {
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 720;
+    letter-spacing: 0.01em;
+  }
+
+  .section-start:hover {
+    border-color: var(--mandarin-red);
+    background: color-mix(in srgb, var(--mandarin-red) 14%, var(--mandarin-raised));
+    transform: translateY(-1px);
   }
 
   .unit-grid {
