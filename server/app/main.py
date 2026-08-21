@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import __version__
 from .config import get_settings
 from .db import init_models
-from .routers import content, transcribe
+from .routers import auth, content, progress, transcribe
 
 settings = get_settings()
 
@@ -37,6 +37,8 @@ app.add_middleware(
 
 app.include_router(content.router)
 app.include_router(transcribe.router)
+app.include_router(auth.router)
+app.include_router(progress.router)
 
 
 @app.get("/health")

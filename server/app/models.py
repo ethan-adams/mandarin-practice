@@ -35,3 +35,21 @@ class AppMeta(Base):
 
     key: Mapped[str] = mapped_column(String, primary_key=True)
     value: Mapped[dict] = mapped_column(JSON)
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String)
+    created_at: Mapped[str] = mapped_column(String)  # ISO timestamp
+
+
+class Progress(Base):
+    __tablename__ = "progress"
+
+    # One canonical snapshot per user (the server is authoritative post-pivot).
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    snapshot: Mapped[dict] = mapped_column(JSON)
+    updated_at: Mapped[str] = mapped_column(String)
