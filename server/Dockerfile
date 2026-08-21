@@ -14,6 +14,7 @@ COPY pyproject.toml ./
 RUN pip install --no-cache-dir ".[transcribe]"
 
 COPY app ./app
+COPY scripts ./scripts
 
 ENV WHISPER_MODEL=base
 EXPOSE 8000
