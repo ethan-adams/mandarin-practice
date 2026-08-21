@@ -1,48 +1,16 @@
-/* CSS Reset and Base Styles */
+/* Reset + app-level base. The palette, type roles, and scale now come from
+ * ea-design's Ink & Jade theme (imported in main.ts as 'ea-design/ink-jade.css'),
+ * which also aliases this app's legacy token names (--bg-primary, --accent-primary,
+ * --mandarin-red, …) onto the new palette, so components restyle without churn. */
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-:root[data-theme="light"] {
-  --bg-primary: #f7f8f6;
-  --bg-secondary: #eef1ee;
-  --bg-tertiary: #e1e6e2;
-  --text-primary: #171a18;
-  --text-secondary: #4e5851;
-  --text-tertiary: #78847c;
-  --border-primary: #d6ded8;
-  --border-secondary: #b9c4bc;
-  --border-active: #2f7d52;
-  --accent-primary: #2f7d52;
-  --accent-hover: #235f3e;
-  --accent-light: #4a6f8d;
-  --accent-gold: #9a6a2f;
-  --shadow-sm: 0 1px 2px rgba(23, 26, 24, 0.06);
-  --shadow-md: 0 18px 42px rgba(23, 26, 24, 0.1);
-  --overlay-bg: rgba(247, 248, 246, 0.92);
-  --review-key: "packet";
-  --packet-fragment: "cleared";
-}
-
-:root[data-theme="dark"] {
-  --bg-primary: #101312;
-  --bg-secondary: #171c19;
-  --bg-tertiary: #202821;
-  --text-primary: #f0f4ef;
-  --text-secondary: #b8c3bc;
-  --text-tertiary: #7f8e84;
-  --border-primary: #2d3931;
-  --border-secondary: #415044;
-  --border-active: #69b083;
-  --accent-primary: #69b083;
-  --accent-hover: #8bd09f;
-  --accent-light: #7fa1c0;
-  --accent-gold: #c79b57;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
-  --shadow-md: 0 24px 64px rgba(0, 0, 0, 0.42);
-  --overlay-bg: rgba(16, 19, 18, 0.9);
+:root {
+  /* app-local markers, kept out of the shared token layer */
   --review-key: "packet";
   --packet-fragment: "cleared";
 }
@@ -52,7 +20,7 @@ html {
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-primary);

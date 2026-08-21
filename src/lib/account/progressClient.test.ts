@@ -15,7 +15,7 @@ function fakeStorage(): StorageLike {
 const BASE: ProgressSnapshot = {
   v: 1,
   updatedAt: '2026-08-01T00:00:00.000Z',
-  reviewState: { c1: { attempts: 1, due: '2026-08-05' } } as ProgressSnapshot['reviewState'],
+  reviewState: { c1: { attempts: 1, due: '2026-08-05' } } as unknown as ProgressSnapshot['reviewState'],
   practiceDays: ['2026-08-01'],
   listeningResults: [],
   listeningCount: 0,
@@ -24,7 +24,7 @@ const BASE: ProgressSnapshot = {
 
 /** Stub the server: transform the pushed snapshot into the "merged" reply. */
 function stubServer(transform: (s: ProgressSnapshot) => ProgressSnapshot) {
-  global.fetch = vi.fn(async (_url: string, opts: { body: string }) => {
+  globalThis.fetch = vi.fn(async (_url: string, opts: { body: string }) => {
     const pushed = (JSON.parse(opts.body) as { snapshot: ProgressSnapshot }).snapshot;
     return {
       ok: true,
