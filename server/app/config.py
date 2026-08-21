@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # Comma-separated allowed browser origins for CORS.
     cors_origins: str = "http://localhost:5173"
 
+    # Optional regex for additional allowed origins (e.g. Vercel preview URLs).
+    cors_origin_regex: str = ""
+
     # faster-whisper model; `base` is the tuned default, `tiny` degrades if RAM
     # is tight on the 2 GB box. Loaded lazily on first transcription.
     whisper_model: str = "base"

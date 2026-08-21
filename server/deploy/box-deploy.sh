@@ -41,7 +41,8 @@ docker run -d --name "$NAME" --restart unless-stopped \
   --network "$NET" \
   -e MANDARIN_DATABASE_URL="$DSN" \
   -e MANDARIN_SESSION_SECRET="$SESSION_SECRET" \
-  -e MANDARIN_CORS_ORIGINS="https://mandarin-api.ethanadams.dev,http://localhost:5173" \
+  -e MANDARIN_CORS_ORIGINS="https://mandarin.ethanadams.dev,http://localhost:5173" \
+  -e MANDARIN_CORS_ORIGIN_REGEX="https://mandarin-practice-[a-z0-9-]+-ethans-projects-8a17cbc5\.vercel\.app" \
   -e MANDARIN_WHISPER_MODEL=base \
   -v mandarin_whisper:/root/.cache/huggingface \
   "$IMAGE"
