@@ -78,7 +78,14 @@ Svelte app ──┬─→ mandarin-api (FastAPI, Lightsail portfolio-backend)
   Validated: `/health` ok; `/v1/content` serves 3222 cards from Postgres;
   `/v1/transcribe` transcribed a real 不客气 clip → `不客气` in ~5s. Scripts:
   `server/deploy/box-deploy.sh`, `box-expose.sh`.
-- 🟡 **Public exposure pending 1 DNS record** — `mandarin-api.ethanadams.dev A
-  100.63.45.196` (DNS-only). Then `box-expose.sh` + set `VITE_API_BASE`.
+- ✅ **PUBLIC + wired (2026-08-20).** `https://mandarin-api.ethanadams.dev`
+  (Namecheap A record → box; Caddy edge-site + Let's Encrypt cert). Verified:
+  public `/health`, `/v1/content` (3222 cards), CORS for `http://localhost:5173`.
+  `.env` sets `VITE_API_BASE`; the app build embeds it. `.env.example` committed.
 - **Phase 3** (accounts + server progress) — not started; next buildable chunk.
-- Frontend has no prod host yet (local-dev only) — a separate later thread.
+- Frontend has no prod host yet (local-dev runs against the live backend) — a
+  separate later thread.
+
+Note: the `ethanadams.dev` DNS zone is on **Namecheap** (`dns1/dns2.registrar-
+servers.com`), not Cloudflare. New box subdomains = A record in Namecheap Advanced
+DNS + a `/opt/edge-sites/*.caddy` file (box-expose.sh).
