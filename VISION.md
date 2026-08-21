@@ -59,6 +59,39 @@ scarce resource is the 2 GB RAM. This is affordable because:
   transcribing at once would need a rethink (batching, a queue, or GPU) — a
   good-problem-later, logged not solved.
 
+## Product experience — the 2026-08-20 redesign direction
+
+A full product rework (in progress). The design language is **"Ink & Jade"**,
+built into Ethan's own **`ea-design`** system: green-biased rice-paper neutrals,
+**jade** as the calm learning-first primary, a **cinnabar seal (印章)** as the one
+bold accent, and type = Schibsted Grotesk / Hanken Grotesk / **Noto Sans SC** for
+hanzi. "HelloChinese-calm, but ours."
+
+Ethan's model, decided 2026-08-20 (these override older SRS/gamified assumptions):
+
+- **Explore as you go — no due dates.** No review-queue "34 due today" chore. You
+  move through content at your pace; adaptive scheduling still runs *under the
+  hood* and quietly resurfaces weak items, but is never surfaced as due-date guilt.
+- **The app judges you — no manual Again/Good/Easy.** Scoring is automatic from
+  actual performance (tone contour + word recognition + recall), not self-rating.
+- **Motivation through culture & history, not gamification.** No points/streak
+  worship. Instead: **character evolution** (oracle-bone → seal → modern, the way
+  his tutor shows it) with etymology/component breakdown, and **cultural festivals**
+  surfaced in season. Streaks stay minor at most.
+- **Drawing is first-class, especially on touch.** The existing `WritingPractice`
+  (hanzi-writer, 955 chars of stroke data in `public/hanzi/`) gets surfaced as a
+  trace/quiz step — currently built but not wired into navigation.
+- **Surfaces:** Explore (home) · Session (speak → auto-score → trace → next) ·
+  Journey (progress, characters met, stories read) · Character Story (evolution +
+  etymology) · You (account/settings).
+- **Platform:** ship a **mobile-first responsive web** app now (Svelte). A native
+  **React Native** app is a *later* possibility, not the current goal — but the
+  server-owned API and portable `ea-design` tokens are built so RN could reuse
+  them. RN would be a React rewrite; that decision is deferred.
+
+*Data gap:* true ancient-form glyphs (oracle/seal) need a source; component
+etymology is derivable now. Prototypes (pitch + clickable app) exist as artifacts.
+
 ## How the pieces connect
 
 ```
