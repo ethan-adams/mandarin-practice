@@ -82,9 +82,20 @@ Svelte app ──┬─→ mandarin-api (FastAPI, Lightsail portfolio-backend)
   (Namecheap A record → box; Caddy edge-site + Let's Encrypt cert). Verified:
   public `/health`, `/v1/content` (3222 cards), CORS for `http://localhost:5173`.
   `.env` sets `VITE_API_BASE`; the app build embeds it. `.env.example` committed.
-- **Phase 3** (accounts + server progress) — not started; next buildable chunk.
+- ✅ **Phase 3 — accounts + server-owned progress (2026-08-20).** Server: users +
+  progress tables, argon2id + bearer tokens, `/v1/auth/*`, `/v1/progress` (merges
+  on write). Client: `account/` (progressClient + accountController) + AccountPanel
+  replaces SyncPanel; account-optional (local-only still works offline). Encrypted
+  sync-code path deleted (syncController/syncClient/crypto/bytes). Deployed +
+  validated live; 176 app tests + 13 server tests green.
 - Frontend has no prod host yet (local-dev runs against the live backend) — a
   separate later thread.
+
+### Cleanup left
+- The Cloudflare Worker still carries the now-unused `/v1/blob` sync route (dead
+  code — the app no longer calls it). Trim the Worker to audio-only when convenient.
+- A real browser E2E of the account + word-check loop (needs a human + mic).
+- `Character` GraphQL subgraph home (stay on Worker vs. move) — deferred.
 
 Note: the `ethanadams.dev` DNS zone is on **Namecheap** (`dns1/dns2.registrar-
 servers.com`), not Cloudflare. New box subdomains = A record in Namecheap Advanced
