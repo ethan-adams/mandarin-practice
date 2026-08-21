@@ -51,7 +51,7 @@
       </div>
       <small>{overall.mastered} sticking well · {overall.seen} met</small>
     </div>
-    <button class="continue-button" onclick={onContinue}>Keep going</button>
+    <button class="continue-button" onclick={onContinue}>Continue</button>
   </section>
 
   <nav class="quick-modes" aria-label="Ways to practice">

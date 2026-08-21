@@ -92,7 +92,7 @@ describe('mandarin course home', () => {
     render(MandarinPractice);
 
     const unit = await screen.findByRole('button', { name: 'Practice Greetings' });
-    await waitFor(() => expect(unit).toHaveTextContent('1/2 mastered'));
+    await waitFor(() => expect(unit).toHaveTextContent('1 of 2 sticking well'));
   });
 
   it('Continue starts a practice session with the queue visible and no answers leaked', async () => {
@@ -129,7 +129,7 @@ describe('mandarin course home', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Practice Greetings' })).toBeInTheDocument());
     await fireEvent.click(screen.getByRole('button', { name: 'Practice Greetings' }));
     await fireEvent.click(await screen.findByRole('button', { name: '← Course' }));
-    await fireEvent.click(screen.getByRole('button', { name: /All cards/ }));
+    await fireEvent.click(screen.getByRole('button', { name: /Browse all/ }));
 
     const queue = await screen.findByLabelText('Cards in current session');
     expect(within(queue).getByText('How would you say: tea?')).toBeInTheDocument();

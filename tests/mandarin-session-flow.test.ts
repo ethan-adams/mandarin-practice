@@ -57,7 +57,10 @@ async function enterPractice(buttonName: string) {
 
 async function rateOnce(rating: 'Again' | 'Hard' | 'Correct') {
   await fireEvent.click(await screen.findByRole('button', { name: /Reveal/ }));
-  await fireEvent.click(await screen.findByRole('button', { name: rating }));
+  // No mic in jsdom, so the card judges via the quiet reveal fallback:
+  // "Show me again" -> wrong, "I knew it" -> correct.
+  const label = rating === 'Again' ? 'Show me again' : 'I knew it';
+  await fireEvent.click(await screen.findByRole('button', { name: label }));
 }
 
 function summary() {

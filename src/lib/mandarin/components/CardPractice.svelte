@@ -1,6 +1,7 @@
 <script lang="ts">
   import { lessonLabel } from '../logic/lessons';
   import { pinyinParts, pinyinText } from '../logic/pinyin';
+  import { deriveAutoRating } from '../logic/autoRating';
   import type { Rating } from '../logic/srs';
   import type { PracticeSession } from '../state/session.svelte';
   import type { PracticeSettings } from '../state/settings.svelte';
@@ -36,6 +37,11 @@
   let currentCard = $derived(session.currentCard);
   let currentPinyin = $derived(currentCard ? pinyinText(currentCard.pinyin) : '');
   let currentParts = $derived(currentCard ? pinyinParts(currentCard.pinyin) : []);
+
+  // The app judges you: derive the schedule from how you actually did (tone
+  // contour + word recognition). Null when you didn't speak — then we fall back
+  // to a quiet "knew it / show me again".
+  let auto = $derived(deriveAutoRating(toneCoach.nativeMatch, toneCoach.recognitionResult));
 
   // The writing panel is opt-in per card; collapse it whenever the card changes.
   let showWriting = $state(false);
@@ -134,11 +140,21 @@
       {/if}
     </div>
 
-    <div class="rating-row">
-      <button class="wrong" onclick={() => onRate('wrong')}>Again</button>
-      <button class="hard" onclick={() => onRate('hard')}>Hard</button>
-      <button class="correct" onclick={() => onRate('correct')}>Correct</button>
-    </div>
+    {#if auto}
+      {@const v = auto}
+      <div class="verdict" data-rating={v.rating} role="status">
+        <strong>{v.headline}</strong>
+        <span>{v.detail}</span>
+      </div>
+      <div class="rating-row single">
+        <button class="next" onclick={() => onRate(v.rating)}>Next</button>
+      </div>
+    {:else}
+      <div class="rating-row fallback">
+        <button class="wrong" onclick={() => onRate('wrong')}>Show me again</button>
+        <button class="correct" onclick={() => onRate('correct')}>I knew it</button>
+      </div>
+    {/if}
   {:else}
     <div class="prompt-actions">
       <button
@@ -424,15 +440,34 @@
     color: white;
   }
 
-  .hard {
-    background: var(--mandarin-gold);
-    color: var(--bg-primary);
-  }
-
   .correct {
-    background: #2f7d52;
+    background: var(--accent-primary);
     color: white;
   }
+
+  .verdict {
+    display: grid;
+    gap: 3px;
+    margin-top: 24px;
+    padding: 13px 15px;
+    border: 1px solid var(--border-primary);
+    border-left: 3px solid var(--accent-primary);
+    border-radius: 10px;
+    background: var(--mandarin-raised);
+  }
+  .verdict[data-rating='wrong'] { border-left-color: var(--mandarin-red); }
+  .verdict[data-rating='hard'] { border-left-color: var(--accent-gold); }
+  .verdict strong {
+    font-family: var(--font-display, inherit);
+    font-size: 15px;
+    color: var(--text-primary);
+  }
+  .verdict span { color: var(--text-secondary); font-size: 13px; }
+
+  .rating-row.single { margin-top: 12px; }
+  .rating-row.single .next { flex: 1; background: var(--accent-primary); color: #fff; }
+  .rating-row.single .next:hover { background: var(--accent-hover); }
+  .rating-row.fallback button { flex: 1; }
 
   @media (max-width: 560px) {
     .card-meta,
