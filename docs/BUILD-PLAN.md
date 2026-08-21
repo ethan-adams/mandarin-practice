@@ -73,9 +73,12 @@ Svelte app ──┬─→ mandarin-api (FastAPI, Lightsail portfolio-backend)
 - **Phase 2** — `POST /v1/transcribe` (faster-whisper, lazy, threadpool, t2s);
   app uploads the clip; `mandarinWhisper.ts` deleted, `@huggingface/transformers`
   + `opencc-js` dropped. ✅ code-complete, tests green.
-- 🔴 **All of Phase 0–2 is undeployed** — waiting on SSH to the box. Nothing is
-  live yet; the app still runs on bundled content because `API_BASE` is unset.
+- ✅ **DEPLOYED + LIVE on the box (2026-08-20).** mandarin-api runs on
+  `draw-prod_default`, reusing the draw-prod Postgres (new `mandarin` DB) and Caddy.
+  Validated: `/health` ok; `/v1/content` serves 3222 cards from Postgres;
+  `/v1/transcribe` transcribed a real 不客气 clip → `不客气` in ~5s. Scripts:
+  `server/deploy/box-deploy.sh`, `box-expose.sh`.
+- 🟡 **Public exposure pending 1 DNS record** — `mandarin-api.ethanadams.dev A
+  100.63.45.196` (DNS-only). Then `box-expose.sh` + set `VITE_API_BASE`.
 - **Phase 3** (accounts + server progress) — not started; next buildable chunk.
-
-Recommended next: **unblock SSH and deploy Phases 0–2** to validate the whole
-stack against the real box before building Phase 3 on top of undeployed code.
+- Frontend has no prod host yet (local-dev only) — a separate later thread.
