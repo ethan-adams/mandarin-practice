@@ -147,8 +147,8 @@
 <section class="mandarin-shell">
   <header class="practice-header">
     <div class="practice-title">
-      <span class="eyebrow">Mandarin Practice</span>
-      <h1>Call and response trainer</h1>
+      <span class="eyebrow">Mandarin</span>
+      <h1>Explore Chinese</h1>
     </div>
   </header>
 
@@ -228,10 +228,11 @@
 
 <style>
   .mandarin-shell {
-    --mandarin-red: #b3323a;
-    --mandarin-red-dark: #8d2730;
-    --mandarin-blue: #2c6f9f;
-    --mandarin-gold: #a56f2b;
+    /* the seal/accent, from the Ink & Jade theme (rationed cinnabar) */
+    --mandarin-red: var(--ij-cinnabar, #b3323a);
+    --mandarin-red-dark: var(--ij-cinnabar, #8d2730);
+    --mandarin-blue: var(--accent-light, #2c6f9f);
+    --mandarin-gold: var(--ij-gold, #a56f2b);
     --mandarin-panel: color-mix(in srgb, var(--bg-secondary) 78%, var(--bg-primary));
     --mandarin-raised: color-mix(in srgb, var(--bg-primary) 72%, var(--bg-secondary));
     min-height: auto;

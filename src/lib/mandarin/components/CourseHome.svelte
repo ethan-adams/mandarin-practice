@@ -21,10 +21,12 @@
   let overall = $derived(unitProgress(session.cards, session.reviewState));
   let sections = $derived(courseSections(session.cards, session.deckUnits));
 
+  // Explore, not a review queue: no "due" counts, no guilt. We frame progress as
+  // ground covered; the adaptive engine quietly resurfaces weak items behind the
+  // "Strengthen" entry rather than nagging with due dates.
   let continueDetail = $derived.by(() => {
-    if (overall.due) return `${overall.due} to review · ${overall.fresh} new`;
-    if (overall.fresh) return `${overall.fresh} new card${overall.fresh === 1 ? '' : 's'} waiting`;
-    return 'All caught up - review anything, or train your ear';
+    if (overall.seen === 0) return 'Start anywhere — pick a track below and go.';
+    return `You've met ${overall.seen} of ${overall.total} words. Keep the thread going.`;
   });
 
   function progressOf(unit: CourseUnit) {
@@ -33,39 +35,42 @@
 
   function unitDetail(unit: CourseUnit) {
     const p = progressOf(unit);
-    if (p.seen === 0) return `Not started · ${p.total} cards`;
-    const due = p.due ? ` · ${p.due} due` : '';
-    return `${p.mastered}/${p.total} mastered${due}`;
+    if (p.seen === 0) return `${p.total} words · not started`;
+    return `${p.mastered} of ${p.total} sticking well`;
   }
 </script>
 
 <div class="course-home">
-  <section class="hero" aria-label="Continue practicing">
+  <section class="hero" aria-label="Continue learning">
     <div class="hero-copy">
-      <span class="hero-kicker">{overall.due ? 'Reviews are ready' : overall.fresh ? 'Fresh cards ahead' : 'All caught up'}</span>
+      <span class="hero-kicker">{overall.seen ? 'Pick up where you left off' : 'Start exploring'}</span>
       <strong>{continueDetail}</strong>
-      <div class="hero-bar" role="img" aria-label={`${overall.mastered} of ${overall.total} cards mastered`}>
+      <div class="hero-bar" role="img" aria-label={`${overall.mastered} of ${overall.total} words sticking well`}>
         <span class="bar-seen" style={`width: ${overall.total ? (overall.seen / overall.total) * 100 : 0}%`}></span>
         <span class="bar-mastered" style={`width: ${overall.total ? (overall.mastered / overall.total) * 100 : 0}%`}></span>
       </div>
-      <small>{overall.mastered} of {overall.total} mastered · {overall.seen} seen</small>
+      <small>{overall.mastered} sticking well · {overall.seen} met</small>
     </div>
-    <button class="continue-button" onclick={onContinue}>Continue</button>
+    <button class="continue-button" onclick={onContinue}>Keep going</button>
   </section>
 
-  <!-- Counts match the hero's honest split: Due = seen cards whose review is
-       due, New = never-seen. (The practice queue for "Due" also serves new
-       cards so a session is never empty.) -->
-  <nav class="quick-modes" aria-label="Practice modes">
-    <button onclick={() => onQuickMode('due')}><strong>{overall.due}</strong> Due</button>
-    <button onclick={() => onQuickMode('new')}><strong>{overall.fresh}</strong> New</button>
-    <button onclick={() => onQuickMode('all')}><strong>{session.cards.length}</strong> All cards</button>
-    <button onclick={onShowListening}><strong>♪</strong> Listening</button>
+  <nav class="quick-modes" aria-label="Ways to practice">
+    <button class="strengthen" onclick={() => onQuickMode('due')}>
+      <strong>✦</strong>
+      <span>Strengthen<small>weak spots resurface</small></span>
+    </button>
+    <button onclick={() => onQuickMode('all')}>
+      <strong>{session.cards.length}</strong>
+      <span>Browse all</span>
+    </button>
+    <button onclick={onShowListening}>
+      <strong>♪</strong>
+      <span>Listening</span>
+    </button>
   </nav>
 
   {#each sections as section (section.id)}
     {@const sectionCards = section.units.flatMap((u) => u.cards)}
-    {@const sp = unitProgress(sectionCards, session.reviewState)}
     {@const lessonIds = section.units.map((u) => u.meta.id)}
     <section class="unit-section" aria-label={section.title}>
       <div class="section-head">
@@ -76,7 +81,7 @@
           aria-label={`Practice all of ${section.title}`}
         >
           Practice all
-          <span>{sectionCards.length} cards{sp.due ? ` · ${sp.due} due` : ''}</span>
+          <span>{sectionCards.length} cards</span>
         </button>
       </div>
       <div class="unit-grid" class:compact={section.compact}>
@@ -118,10 +123,10 @@
     justify-content: space-between;
     gap: 18px;
     padding: clamp(18px, 3vw, 28px);
-    border: 1px solid color-mix(in srgb, var(--mandarin-red) 34%, var(--border-primary));
-    border-radius: 10px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg, 18px);
     background:
-      linear-gradient(120deg, color-mix(in srgb, var(--mandarin-red) 9%, transparent), color-mix(in srgb, var(--mandarin-gold) 7%, transparent)),
+      linear-gradient(120deg, color-mix(in srgb, var(--accent-primary) 8%, transparent), transparent 60%),
       var(--mandarin-raised);
     box-shadow: var(--shadow-sm);
   }
@@ -134,24 +139,25 @@
   }
 
   .hero-kicker {
-    color: var(--mandarin-red);
+    color: var(--accent-primary);
     font-size: 11px;
-    font-weight: 840;
+    font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
 
   .hero-copy > strong {
     color: var(--text-primary);
+    font-family: var(--font-display, inherit);
     font-size: clamp(20px, 2.6vw, 28px);
     line-height: 1.15;
-    font-weight: 860;
+    font-weight: 800;
   }
 
   .hero-copy small {
     color: var(--text-secondary);
     font-size: 12px;
-    font-weight: 740;
+    font-weight: 600;
   }
 
   .hero-bar,
@@ -161,7 +167,7 @@
     height: 8px;
     max-width: 420px;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 999px;
     background: color-mix(in srgb, var(--bg-tertiary) 84%, var(--bg-primary));
   }
 
@@ -175,62 +181,87 @@
   }
 
   .bar-seen {
-    background: color-mix(in srgb, var(--mandarin-gold) 55%, var(--bg-tertiary));
+    background: color-mix(in srgb, var(--accent-gold) 50%, var(--bg-tertiary));
   }
 
   .bar-mastered {
-    background: #2f7d52;
+    background: var(--accent-primary);
   }
 
   .continue-button {
     flex: 0 0 auto;
     min-height: 58px;
     padding: 0 clamp(24px, 4vw, 44px);
-    border-radius: 10px;
-    background: var(--mandarin-red);
-    color: white;
+    border-radius: var(--radius, 12px);
+    background: var(--accent-primary);
+    color: #fff;
+    font-family: var(--font-display, inherit);
     font-size: 17px;
-    font-weight: 860;
+    font-weight: 800;
     letter-spacing: 0.01em;
     transition: background-color 120ms ease, transform 120ms ease;
   }
 
   .continue-button:hover {
-    background: var(--mandarin-red-dark);
+    background: var(--accent-hover);
     transform: translateY(-1px);
   }
 
   .quick-modes {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .quick-modes button {
-    display: grid;
-    gap: 2px;
-    min-height: 54px;
-    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 60px;
+    padding: 10px 14px;
     border: 1px solid var(--border-primary);
-    border-radius: 8px;
+    border-radius: var(--radius, 12px);
     background: var(--mandarin-raised);
-    color: var(--text-tertiary);
-    font-size: 11px;
-    font-weight: 780;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+    text-align: left;
     transition: border-color 120ms ease, background-color 120ms ease;
   }
 
   .quick-modes button:hover {
-    border-color: color-mix(in srgb, var(--mandarin-red) 42%, var(--border-primary));
-    background: color-mix(in srgb, var(--mandarin-red) 6%, var(--mandarin-raised));
+    border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--border-primary));
+    background: color-mix(in srgb, var(--accent-primary) 5%, var(--mandarin-raised));
   }
 
   .quick-modes strong {
     color: var(--text-primary);
+    font-family: var(--font-display, inherit);
     font-size: 18px;
-    line-height: 1.1;
+    line-height: 1;
+    flex: none;
+    width: 26px;
+    text-align: center;
+  }
+
+  .quick-modes span {
+    display: grid;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .quick-modes span small {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+  }
+
+  /* the one rationed cinnabar accent on this screen */
+  .quick-modes .strengthen strong {
+    color: var(--mandarin-red);
+  }
+  .quick-modes .strengthen:hover {
+    border-color: color-mix(in srgb, var(--mandarin-red) 40%, var(--border-primary));
+    background: color-mix(in srgb, var(--mandarin-red) 5%, var(--mandarin-raised));
   }
 
   .unit-section {
@@ -249,8 +280,9 @@
   .unit-section h2 {
     margin: 0;
     color: var(--text-primary);
+    font-family: var(--font-display, inherit);
     font-size: 17px;
-    font-weight: 840;
+    font-weight: 800;
     letter-spacing: 0.01em;
   }
 
@@ -260,12 +292,12 @@
     gap: 1px;
     flex: 0 0 auto;
     padding: 7px 14px;
-    border: 1px solid color-mix(in srgb, var(--mandarin-red) 40%, var(--border-primary));
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--mandarin-red) 8%, var(--mandarin-raised));
-    color: var(--mandarin-red);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 36%, var(--border-primary));
+    border-radius: var(--radius-sm, 8px);
+    background: color-mix(in srgb, var(--accent-primary) 7%, var(--mandarin-raised));
+    color: var(--accent-primary);
     font-size: 12px;
-    font-weight: 840;
+    font-weight: 800;
     letter-spacing: 0.02em;
     transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
   }
@@ -273,13 +305,13 @@
   .section-start span {
     color: var(--text-secondary);
     font-size: 10px;
-    font-weight: 720;
+    font-weight: 600;
     letter-spacing: 0.01em;
   }
 
   .section-start:hover {
-    border-color: var(--mandarin-red);
-    background: color-mix(in srgb, var(--mandarin-red) 14%, var(--mandarin-raised));
+    border-color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 13%, var(--mandarin-raised));
     transform: translateY(-1px);
   }
 
@@ -294,8 +326,8 @@
     gap: 7px;
     padding: 14px;
     border: 1px solid var(--border-primary);
-    border-left: 4px solid color-mix(in srgb, var(--mandarin-red) 40%, var(--border-primary));
-    border-radius: 8px;
+    border-left: 3px solid color-mix(in srgb, var(--accent-primary) 45%, var(--border-primary));
+    border-radius: var(--radius, 12px);
     background: var(--mandarin-raised);
     color: var(--text-primary);
     text-align: left;
@@ -303,36 +335,36 @@
   }
 
   .unit-card:hover {
-    border-color: color-mix(in srgb, var(--mandarin-red) 42%, var(--border-primary));
-    background: color-mix(in srgb, var(--mandarin-red) 7%, var(--mandarin-raised));
+    border-color: color-mix(in srgb, var(--accent-primary) 42%, var(--border-primary));
+    background: color-mix(in srgb, var(--accent-primary) 6%, var(--mandarin-raised));
     transform: translateY(-1px);
   }
 
   .unit-kicker {
-    color: var(--mandarin-red);
+    color: var(--accent-primary);
     font-size: 10px;
-    font-weight: 820;
+    font-weight: 800;
     letter-spacing: 0.07em;
     text-transform: uppercase;
   }
 
   .unit-card > strong {
+    font-family: var(--font-display, inherit);
     font-size: 16px;
     line-height: 1.25;
-    font-weight: 840;
+    font-weight: 800;
   }
 
   .unit-card small {
     color: var(--text-secondary);
     font-size: 12px;
-    font-weight: 720;
+    font-weight: 600;
   }
 
   @media (min-width: 700px) {
     .unit-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
     .unit-grid.compact {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
@@ -342,7 +374,6 @@
     .unit-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
-
     .unit-grid.compact {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
@@ -353,13 +384,8 @@
       flex-direction: column;
       align-items: stretch;
     }
-
     .continue-button {
       width: 100%;
-    }
-
-    .quick-modes {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 </style>
