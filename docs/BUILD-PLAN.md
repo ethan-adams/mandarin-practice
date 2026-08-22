@@ -114,8 +114,18 @@ landed so far (all with tests + build green):
    seal) evolution deferred** — no free, well-licensed, well-covered dataset;
    ships on derivable component etymology for now.
 
-**Next:** cultural festivals in season; then, on Ethan's approval, merge
-`rethink-audio-selection` → `main` to ship the redesign to mandarin.ethanadams.dev.
+7. ✅ **Cultural festivals** (2026-08-22) — when a festival is within ~6 weeks,
+   the Explore home greets it (name in the heritage brush font, cultural note,
+   the season's greeting as a learning tie-in). Nothing shows out of season.
+   Curated verified dates 2026–2028 in `logic/festivals.ts` (lunisolar dates
+   can't be computed); app only surfaces a festival it has a real date for.
+
+**Shipped:** the redesign (increments 1–7) went to production on 2026-08-22 —
+`rethink-audio-selection` fast-forwarded into `main`, live at
+mandarin.ethanadams.dev. Work continues on the branch; merge again to ship more.
+
+**Next ideas:** festival greeting → tap-to-hear audio; Character Story oracle/seal
+evolution once a licensed glyph dataset is found; a "You" settings surface.
 
 ### Cleanup left
 - ✅ **Stale word-check copy (honesty bug) — fixed 2026-08-22.** `ToneCoachPanel`
