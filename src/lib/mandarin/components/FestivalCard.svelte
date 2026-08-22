@@ -1,10 +1,41 @@
 <script lang="ts">
   import { festivalWhen, type UpcomingFestival } from '../logic/festivals';
+  import { findMandarinVoice } from '../../utils/mandarinBrowserVoice';
 
   let { upcoming }: { upcoming: UpcomingFestival } = $props();
 
   let f = $derived(upcoming.festival);
   let when = $derived(festivalWhen(upcoming.daysUntil));
+
+  // Tap-to-hear the greeting via the browser's Mandarin voice. Only offered when
+  // a real Mandarin voice exists — never a button that silently does nothing.
+  let voice = $state<SpeechSynthesisVoice | null>(null);
+  let speaking = $state(false);
+
+  $effect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    let alive = true;
+    void findMandarinVoice(window.speechSynthesis).then((v) => {
+      if (alive) voice = v as SpeechSynthesisVoice | null;
+    });
+    return () => {
+      alive = false;
+      window.speechSynthesis?.cancel();
+    };
+  });
+
+  function speakGreeting() {
+    if (!f.greeting || !voice || typeof window === 'undefined') return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(f.greeting.hanzi);
+    u.voice = voice;
+    u.lang = voice.lang || 'zh-CN';
+    u.rate = 0.92;
+    u.onend = () => (speaking = false);
+    u.onerror = () => (speaking = false);
+    speaking = true;
+    window.speechSynthesis.speak(u);
+  }
 </script>
 
 <section class="festival" aria-label={`${f.english} — ${when}`}>
@@ -16,6 +47,14 @@
     <p class="blurb">{f.blurb}</p>
     {#if f.greeting}
       <p class="greeting">
+        {#if voice}
+          <button
+            class="say"
+            onclick={speakGreeting}
+            aria-label={`Hear ${f.greeting.hanzi}`}
+            data-speaking={speaking}
+          >▶</button>
+        {/if}
         <span class="greeting-hanzi" lang="zh-CN">{f.greeting.hanzi}</span>
         <span class="greeting-pinyin">{f.greeting.pinyin}</span>
         <span class="greeting-gloss">“{f.greeting.gloss}”</span>
@@ -101,6 +140,24 @@
     margin: 10px 0 0;
     padding-top: 10px;
     border-top: 1px solid var(--border-primary);
+  }
+
+  .say {
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 1px solid color-mix(in srgb, var(--mandarin-red) 40%, var(--border-primary));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--mandarin-red) 12%, transparent);
+    color: var(--mandarin-red);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background-color 120ms ease;
+  }
+  .say:hover,
+  .say[data-speaking='true'] {
+    background: color-mix(in srgb, var(--mandarin-red) 22%, transparent);
   }
 
   .greeting-hanzi {
