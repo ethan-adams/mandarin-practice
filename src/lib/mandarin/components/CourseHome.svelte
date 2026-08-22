@@ -1,5 +1,7 @@
 <script lang="ts">
   import { courseSections, unitProgress, type CourseUnit } from '../logic/course';
+  import { upcomingFestival } from '../logic/festivals';
+  import FestivalCard from './FestivalCard.svelte';
   import type { Mode, PracticeSession } from '../state/session.svelte';
 
   let {
@@ -20,6 +22,9 @@
 
   let overall = $derived(unitProgress(session.cards, session.reviewState));
   let sections = $derived(courseSections(session.cards, session.deckUnits));
+  // Culture over gamification: when a festival is near, greet it — otherwise
+  // nothing shows (no year-round banner).
+  let festival = $derived(upcomingFestival());
 
   // Explore, not a review queue: no "due" counts, no guilt. We frame progress as
   // ground covered; the adaptive engine quietly resurfaces weak items behind the
@@ -41,6 +46,10 @@
 </script>
 
 <div class="course-home">
+  {#if festival}
+    <FestivalCard upcoming={festival} />
+  {/if}
+
   <section class="hero" aria-label="Continue learning">
     <div class="hero-copy">
       <span class="hero-kicker">{overall.seen ? 'Pick up where you left off' : 'Start exploring'}</span>

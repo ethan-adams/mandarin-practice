@@ -278,7 +278,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 18px;
+    flex-wrap: wrap;
+    gap: 12px 18px;
     max-width: 1280px;
     margin: 0 auto 12px;
     padding: 6px 0 10px;
@@ -329,6 +330,7 @@
   .surface-nav {
     display: inline-flex;
     flex: 0 0 auto;
+    margin-left: auto; /* keep it right-aligned even when the header wraps */
     gap: 4px;
     padding: 4px;
     border: 1px solid var(--border-primary);
@@ -474,6 +476,12 @@
 
     .practice-title h1 {
       font-size: 30px;
+    }
+
+    /* Give the title the whole first line so the section nav wraps below it
+       instead of overflowing off the right edge on narrow phones. */
+    .practice-title {
+      flex: 1 1 100%;
     }
 
     .practice-card {
