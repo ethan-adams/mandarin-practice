@@ -125,13 +125,22 @@ landed so far (all with tests + build green):
    the display/sound toggles into one place; reset takes a confirm. `You.svelte`.
 9. ✅ **Festival greeting audio** (2026-08-22) — tap-to-hear the greeting via the
    browser Mandarin voice, shown only when a real voice exists (degrade, don't lie).
+10. ✅ **Character Story evolution — ancient forms now shipped** (2026-08-22, no
+    longer deferred). "How it evolved" shows Oracle bone 甲骨文 → Bronze 金文 →
+    Seal 篆書 → Today 楷書 on museum-style paper tiles (legible in both themes).
+    Data = Wikimedia Commons' public-domain 古漢字 project SVGs, self-hosted in
+    `public/ancient/` with `public/ancient/manifest.json`
+    (`scripts/build-ancient-forms.mjs`, MANUAL — builds use committed assets, no
+    network; must be committed since Vercel can't regenerate them, unlike
+    `public/hanzi/`). Coverage: **481/955 deck chars** have ≥1 form (~50%, common
+    chars first); the evolution only shows when forms exist. ~6.6 MB / 1027 SVGs.
 
-**Shipped:** increments 1–9 are in production (fast-forwarded into `main`), live at
-mandarin.ethanadams.dev. Work continues on the branch; merge again to ship more.
+**Shipped:** increments 1–10 are in production (fast-forwarded into `main`), live
+at mandarin.ethanadams.dev. Work continues on the branch; merge again to ship more.
 
-**Next ideas:** Character Story oracle/seal *evolution* once a licensed glyph
-dataset is found (still deferred — see the note under increment 6); festival
-greeting could upgrade to prebuilt R2 audio if browser-voice quality disappoints.
+**Next ideas:** widen ancient-form coverage (re-run the fetch as the 古漢字 project
+grows, or add a second PD source); festival greeting could upgrade to prebuilt R2
+audio if browser-voice quality disappoints; a real mic E2E of the word-check loop.
 
 ### Cleanup left
 - ✅ **Stale word-check copy (honesty bug) — fixed 2026-08-22.** `ToneCoachPanel`

@@ -90,13 +90,12 @@ Ethan's model, decided 2026-08-20 (these override older SRS/gamified assumptions
   them. RN would be a React rewrite; that decision is deferred.
 
 *Data status (2026-08-22):* component etymology, radical, meaning, and stroke
-order all ship now, from Make Me a Hanzi's dictionary (self-hosted in
-`public/hanzi-dict.json`, $0/local — same pattern as the stroke graphics). True
-ancient-form glyphs (oracle/seal) stay **deferred**: no free, well-licensed,
-well-covered dataset was found (hanziyuan / Wikimedia coverage + licensing
-unresolved). The Character Story ships on the derivable data; the
-oracle→seal→modern *evolution* view waits on a source. Prototypes (pitch +
-clickable app) exist as artifacts.
+order ship from Make Me a Hanzi's dictionary (self-hosted in
+`public/hanzi-dict.json`, $0/local). **The oracle→seal→modern evolution view now
+ships too** — ancient-form glyphs come from Wikimedia Commons' public-domain 古漢字
+project, self-hosted in `public/ancient/` (~50% of deck chars covered; the view
+only appears when a character has forms). This resolves the earlier data gap.
+Prototypes (pitch + clickable app) exist as artifacts.
 
 ## How the pieces connect
 
