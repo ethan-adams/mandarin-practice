@@ -32,16 +32,16 @@ describe('writing practice', () => {
 
     await waitFor(() => expect(createMock).toHaveBeenCalled());
     expect(lastCharCreated()).toBe('好');
-    expect(screen.getByText('Character 1 of 2')).toBeInTheDocument();
+    expect(screen.getByText('Trace · 1 of 2')).toBeInTheDocument();
 
     // Finish the first character's quiz -> advance to the second.
     getLastQuiz()?.onComplete?.();
     await waitFor(() => expect(lastCharCreated()).toBe('你'));
-    expect(screen.getByText('Character 2 of 2')).toBeInTheDocument();
+    expect(screen.getByText('Trace · 2 of 2')).toBeInTheDocument();
 
-    // Finish the last character -> done state with a practice-again action.
+    // Finish the last character -> done state with a trace-again action.
     getLastQuiz()?.onComplete?.();
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Practice again' })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Trace again' })).toBeInTheDocument());
   });
 
   it('shows an empty state when there is nothing to trace', () => {

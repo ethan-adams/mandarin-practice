@@ -10,7 +10,13 @@
   let totalMistakes = $state(0);
   let complete = $state(false);
   let dataError = $state(false);
+  let root = $state<HTMLDivElement | null>(null);
   let target = $state<HTMLDivElement | null>(null);
+  // Canvas size is measured once per character from the container so tracing is
+  // big and touch-friendly on phones, capped on wide desktop cards. Not tied to
+  // a ResizeObserver on purpose: re-sizing mid-quiz would wipe the learner's
+  // in-progress strokes on every mobile URL-bar show/hide.
+  let size = $state(300);
 
   let currentChar = $derived(chars[index] ?? '');
   let writer: HanziWriter | null = null;
@@ -56,19 +62,23 @@
     const el = target;
     const char = currentChar;
     if (!el || !char || complete) return;
+    // Measure the container imperatively (not reactively) to avoid a loop.
+    const available = (root?.clientWidth ?? 320) - 4;
+    const measured = Math.max(240, Math.min(available, 360));
+    size = measured;
     el.innerHTML = '';
     mistakes = 0;
     dataError = false;
 
     const created = HanziWriter.create(el, char, {
-      width: 260,
-      height: 260,
+      width: measured,
+      height: measured,
       padding: 8,
       showCharacter: false,
       showOutline: true,
-      strokeColor: '#b3323a',
+      strokeColor: '#2E7D5B', // jade — the model strokes
       outlineColor: '#c9ccd1',
-      drawingColor: '#2c6f9f',
+      drawingColor: '#C8402F', // cinnabar — the learner's own mark
       charDataLoader: (c: string) =>
         fetch(hanziDataPath(c)).then((r) => {
           if (!r.ok) throw new Error(`stroke data ${r.status}`);
@@ -88,7 +98,7 @@
   });
 </script>
 
-<div class="writing">
+<div class="writing" bind:this={root}>
   {#if chars.length === 0}
     <p class="muted">No characters to trace here.</p>
   {:else if complete}
@@ -97,16 +107,16 @@
       <p class="muted">
         Nicely done — {totalMistakes === 0 ? 'a clean pass, no misses.' : `${totalMistakes} miss${totalMistakes === 1 ? '' : 'es'} across ${chars.length} character${chars.length === 1 ? '' : 's'}.`}
       </p>
-      <button class="primary" onclick={practiceAgain}>Practice again</button>
+      <button class="primary" onclick={practiceAgain}>Trace again</button>
     </div>
   {:else}
     <div class="head">
-      <span class="counter">Character {index + 1} of {chars.length}</span>
+      <span class="counter">Trace · {index + 1} of {chars.length}</span>
       {#if mistakes > 0}<span class="miss">{mistakes} miss{mistakes === 1 ? '' : 'es'}</span>{/if}
     </div>
 
     <div class="stage">
-      <div class="grid-frame">
+      <div class="grid-frame" style={`width:${size}px;height:${size}px`}>
         <div class="target" bind:this={target} aria-label={`Trace the character ${currentChar}`}></div>
       </div>
     </div>
@@ -128,7 +138,7 @@
     margin-top: 18px;
     padding: 16px;
     border: 1px solid var(--border-primary);
-    border-radius: 10px;
+    border-radius: 12px;
     background: color-mix(in srgb, var(--bg-primary) 74%, var(--bg-secondary));
   }
 
@@ -140,7 +150,7 @@
   }
 
   .counter {
-    color: var(--mandarin-red);
+    color: var(--accent-primary);
     font-size: 11px;
     font-weight: 840;
     letter-spacing: 0.06em;
@@ -160,10 +170,9 @@
 
   .grid-frame {
     position: relative;
-    width: 260px;
-    height: 260px;
+    max-width: 100%;
     border: 1px solid var(--border-primary);
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--bg-primary);
     /* Faint quadrant guide lines, like a 田字格 writing grid. */
     background-image:
@@ -171,6 +180,7 @@
       linear-gradient(to bottom, color-mix(in srgb, var(--border-primary) 60%, transparent) 1px, transparent 1px);
     background-position: center;
     background-size: 50% 50%;
+    touch-action: none; /* let the finger draw instead of scrolling the page */
   }
 
   .target {
@@ -182,17 +192,21 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 14px;
+    margin-top: 16px;
   }
 
   button {
-    min-height: 40px;
-    padding: 0 15px;
+    min-height: 48px;
+    padding: 0 18px;
     border: 0;
-    border-radius: 8px;
+    border-radius: 10px;
     cursor: pointer;
     font: inherit;
     font-weight: 800;
+  }
+
+  .controls button {
+    flex: 1 1 auto;
   }
 
   .ghost {
@@ -200,10 +214,16 @@
     background: var(--bg-tertiary);
     color: var(--text-primary);
   }
+  .ghost:hover {
+    border-color: var(--accent-primary);
+  }
 
   .primary {
-    background: var(--mandarin-red);
+    background: var(--accent-primary);
     color: #fff;
+  }
+  .primary:hover {
+    background: var(--accent-hover);
   }
 
   .done {
@@ -214,6 +234,7 @@
 
   .done-line {
     margin: 0;
+    font-family: var(--font-han, sans-serif);
     font-size: 44px;
     font-weight: 860;
     color: var(--text-primary);
