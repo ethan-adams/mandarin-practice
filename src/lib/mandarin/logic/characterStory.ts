@@ -109,6 +109,39 @@ export function buildStory(char: string, dict: HanziDict): CharStory {
   };
 }
 
+// ---- Ancient forms (oracle → bronze → seal), from public/ancient/ ----
+
+export type AncientEra = 'oracle' | 'bronze' | 'seal';
+export type AncientForm = { era: AncientEra; url: string; label: string; cn: string };
+
+const ERA_LABEL: Record<AncientEra, { label: string; cn: string }> = {
+  oracle: { label: 'Oracle bone', cn: '甲骨文' },
+  bronze: { label: 'Bronze', cn: '金文' },
+  seal: { label: 'Seal', cn: '篆書' },
+};
+
+/** Ancient forms available for a character, oldest first (empty when none). */
+export function ancientForms(char: string, manifest: Record<string, AncientEra[]>): AncientForm[] {
+  return (manifest[char] ?? []).map((era) => ({
+    era,
+    url: `/ancient/${encodeURIComponent(char)}-${era}.svg`,
+    label: ERA_LABEL[era].label,
+    cn: ERA_LABEL[era].cn,
+  }));
+}
+
+let manifestCache: Promise<Record<string, AncientEra[]>> | null = null;
+
+/** Load and cache the ancient-form manifest; {} if it isn't present. */
+export function loadAncientManifest(): Promise<Record<string, AncientEra[]>> {
+  if (!manifestCache) {
+    manifestCache = fetch('/ancient/manifest.json', { cache: 'force-cache' })
+      .then((r) => (r.ok ? (r.json() as Promise<Record<string, AncientEra[]>>) : {}))
+      .catch(() => ({}));
+  }
+  return manifestCache;
+}
+
 let cache: Promise<HanziDict> | null = null;
 
 /** Load and cache the character dictionary (one fetch per session). */

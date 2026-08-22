@@ -12,6 +12,7 @@
     "prebuild": "node scripts/build-hanzi.mjs",
     "build-hanzi": "node scripts/build-hanzi.mjs",
     "build-hanzi-dict": "node scripts/build-hanzi-dict.mjs",
+    "build-ancient-forms": "node scripts/build-ancient-forms.mjs",
     "preview": "vite preview",
     "test": "vitest",
     "check": "svelte-check --tsconfig ./tsconfig.app.json"

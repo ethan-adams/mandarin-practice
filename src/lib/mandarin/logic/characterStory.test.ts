@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildStory, decompositionLeaves, etymologyText, shortGloss, type HanziDict } from './characterStory';
+import { ancientForms, buildStory, decompositionLeaves, etymologyText, shortGloss, type HanziDict } from './characterStory';
 
 const dict: HanziDict = {
   好: { def: 'good, excellent, fine; proper', pinyin: 'hǎo', ids: '⿰女子', radical: '女', ety: { t: 'ideographic', hint: 'A woman 女 with a son 子' } },
@@ -60,5 +60,17 @@ describe('buildStory', () => {
   it('degrades gracefully for an unknown character', () => {
     const story = buildStory('🙂', dict);
     expect(story).toMatchObject({ char: '🙂', pinyin: null, definition: null, components: [] });
+  });
+});
+
+describe('ancientForms', () => {
+  it('maps a manifest entry to ordered, labelled, self-hosted forms', () => {
+    const forms = ancientForms('好', { 好: ['oracle', 'bronze', 'seal'] });
+    expect(forms.map((f) => f.era)).toEqual(['oracle', 'bronze', 'seal']);
+    expect(forms[0]).toMatchObject({ era: 'oracle', label: 'Oracle bone', cn: '甲骨文' });
+    expect(forms[2].url).toBe('/ancient/%E5%A5%BD-seal.svg');
+  });
+  it('returns nothing for a character absent from the manifest', () => {
+    expect(ancientForms('好', {})).toEqual([]);
   });
 });

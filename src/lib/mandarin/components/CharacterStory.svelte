@@ -1,7 +1,15 @@
 <script lang="ts">
   import HanziWriter from 'hanzi-writer';
   import { hanziDataPath } from '../../utils/hanziChars';
-  import { buildStory, loadHanziDict, type CharStory, type HanziDict } from '../logic/characterStory';
+  import {
+    ancientForms,
+    buildStory,
+    loadAncientManifest,
+    loadHanziDict,
+    type AncientEra,
+    type CharStory,
+    type HanziDict,
+  } from '../logic/characterStory';
   import WritingPractice from './WritingPractice.svelte';
 
   let {
@@ -17,6 +25,7 @@
   } = $props();
 
   let dict = $state<HanziDict | null>(null);
+  let manifest = $state<Record<string, AncientEra[]>>({});
   let loadError = $state(false);
   let showTrace = $state(false);
   let hero = $state<HTMLDivElement | null>(null);
@@ -24,6 +33,7 @@
   let writer: HanziWriter | null = null;
 
   let story = $derived<CharStory | null>(dict ? buildStory(char, dict) : null);
+  let forms = $derived(ancientForms(char, manifest));
 
   const roleLabel = { semantic: 'meaning', phonetic: 'sound', part: 'part' } as const;
 
@@ -32,6 +42,7 @@
     loadHanziDict()
       .then((d) => alive && (dict = d))
       .catch(() => alive && (loadError = true));
+    void loadAncientManifest().then((m) => alive && (manifest = m));
     return () => {
       alive = false;
     };
@@ -110,6 +121,26 @@
         {/if}
       </div>
     </header>
+
+    {#if forms.length}
+      <section class="evolution" aria-label="How the character evolved">
+        <h3>How it evolved</h3>
+        <div class="timeline">
+          {#each forms as form (form.era)}
+            <figure class="era">
+              <div class="era-glyph"><img src={form.url} alt={`${char} in ${form.label} script`} loading="lazy" /></div>
+              <figcaption>{form.label}<span lang="zh-CN">{form.cn}</span></figcaption>
+            </figure>
+            <span class="arrow" aria-hidden="true">→</span>
+          {/each}
+          <figure class="era">
+            <div class="era-glyph modern" lang="zh-CN">{char}</div>
+            <figcaption>Today<span lang="zh-CN">楷書</span></figcaption>
+          </figure>
+        </div>
+        <small class="credit">Ancient forms: public-domain 古漢字 project, Wikimedia Commons.</small>
+      </section>
+    {/if}
 
     {#if story.components.length >= 2}
       <section class="parts" aria-label="What it's built from">
@@ -280,6 +311,76 @@
     font-family: var(--font-display, inherit);
     font-size: 15px;
     font-weight: 800;
+  }
+
+  .evolution {
+    display: grid;
+    gap: 10px;
+  }
+
+  .timeline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .era {
+    flex: 0 0 auto;
+    margin: 0;
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+  }
+
+  /* Fixed warm-paper tile in both themes: the ancient SVGs are black ink on
+     transparent, so they'd vanish on a dark surface. Reads like a museum card. */
+  .era-glyph {
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    padding: 8px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm, 8px);
+    background: #f4f6f1;
+    color: #1a211c;
+  }
+  .era-glyph img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .era-glyph.modern {
+    font-family: var(--font-han, sans-serif);
+    font-size: 44px;
+    line-height: 1;
+  }
+
+  .era figcaption {
+    display: grid;
+    justify-items: center;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .era figcaption span {
+    color: var(--text-tertiary);
+    font-family: var(--font-han, inherit);
+    font-weight: 600;
+  }
+
+  .timeline .arrow {
+    flex: 0 0 auto;
+    color: var(--text-tertiary);
+    font-size: 16px;
+  }
+
+  .credit {
+    color: var(--text-tertiary);
+    font-size: 11px;
   }
 
   .part-row {
