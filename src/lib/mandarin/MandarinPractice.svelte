@@ -13,9 +13,9 @@
   import CourseHome from './components/CourseHome.svelte';
   import ListeningPractice from './components/ListeningPractice.svelte';
   import SessionSummary from './components/SessionSummary.svelte';
-  import AccountPanel from './components/AccountPanel.svelte';
   import Journey from './components/Journey.svelte';
   import CharacterStory from './components/CharacterStory.svelte';
+  import You from './components/You.svelte';
 
   const settings = new PracticeSettings();
   const session = new PracticeSession(() => toneCoach.reset());
@@ -87,7 +87,7 @@
       event.target instanceof HTMLTextAreaElement ||
       event.target instanceof HTMLAnchorElement
     ) return;
-    if (session.practiceView === 'home' || session.practiceView === 'journey' || session.practiceView === 'story') return;
+    if (['home', 'journey', 'story', 'you'].includes(session.practiceView)) return;
     if (session.practiceView === 'summary') {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
@@ -160,10 +160,11 @@
       <span class="eyebrow">Mandarin</span>
       <h1>Explore Chinese</h1>
     </div>
-    {#if session.practiceView === 'home' || session.practiceView === 'journey'}
+    {#if session.practiceView === 'home' || session.practiceView === 'journey' || session.practiceView === 'you'}
       <nav class="surface-nav" aria-label="Sections">
         <button class:active={session.practiceView === 'home'} onclick={() => session.goHome()}>Explore</button>
         <button class:active={session.practiceView === 'journey'} onclick={() => session.showJourney()}>Journey</button>
+        <button class:active={session.practiceView === 'you'} onclick={() => session.showYou()}>You</button>
       </nav>
     {/if}
   </header>
@@ -199,6 +200,16 @@
       onClose={() => session.closeStory()}
       onOpenStory={openStory}
       backLabel={storyBackLabel}
+    />
+  {:else if session.practiceView === 'you'}
+    <You
+      {account}
+      {settings}
+      onResetProgress={() => session.resetDemo()}
+      onClearEvidence={() => evidence.clear()}
+      infoLine={session.corpusLoaded
+        ? `${session.corpusLessonCount} lessons loaded. Review history stays in this browser.`
+        : 'Demo fallback loaded. Review history stays in this browser.'}
     />
   {:else}
     <div class="practice-layout">
@@ -243,12 +254,9 @@
     </div>
   {/if}
 
-  <AccountPanel {account} />
-
   <footer class="practice-footer">
-    <button onclick={() => session.resetDemo()}>Reset progress</button>
-    <button onclick={() => evidence.clear()}>Clear pronunciation evidence</button>
     <p>{session.corpusLoaded ? `${session.corpusLessonCount} lessons loaded. Review history stays in this browser.` : 'Demo fallback loaded. Review history stays in this browser.'}</p>
+    <button class="you-link" onclick={() => session.showYou()}>Account &amp; settings →</button>
   </footer>
 </section>
 

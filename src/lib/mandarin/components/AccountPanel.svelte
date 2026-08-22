@@ -132,8 +132,11 @@
   }
 
   .primary {
-    background: var(--mandarin-red, #b3323a);
+    background: var(--accent-primary);
     color: #fff;
+  }
+  .primary:hover:not(:disabled) {
+    background: var(--accent-hover);
   }
 
   .ghost {

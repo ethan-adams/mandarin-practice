@@ -20,7 +20,7 @@ import { loadPracticeDays, recordPracticeDay, savePracticeDays } from '../logic/
 import { lessonLabel } from '../logic/lessons';
 
 export type Mode = 'due' | 'new' | 'all';
-export type PracticeView = 'home' | 'cards' | 'listening' | 'summary' | 'journey' | 'story';
+export type PracticeView = 'home' | 'cards' | 'listening' | 'summary' | 'journey' | 'story' | 'you';
 
 /** Cards per session batch before the summary offers a break. */
 export const SESSION_BATCH = 15;
@@ -201,6 +201,13 @@ export class PracticeSession {
     this.#onReset();
   }
 
+  /** The You surface: account, preferences, and data controls. */
+  showYou() {
+    this.practiceView = 'you';
+    this.showAnswer = false;
+    this.#onReset();
+  }
+
   /** Open a character's story; remembers where to return on close. */
   showStory(char: string, from: PracticeView = this.practiceView) {
     this.storyChar = char;
@@ -281,7 +288,7 @@ export class PracticeSession {
       // Never yanks the user out of listening practice, which lives on the
       // bare path. Card practice, the summary, and the transient hub views all
       // return home.
-      if (['cards', 'summary', 'journey', 'story'].includes(this.practiceView)) {
+      if (['cards', 'summary', 'journey', 'story', 'you'].includes(this.practiceView)) {
         this.practiceView = 'home';
         this.storyChar = null;
       }
