@@ -120,12 +120,18 @@ landed so far (all with tests + build green):
    Curated verified dates 2026–2028 in `logic/festivals.ts` (lunisolar dates
    can't be computed); app only surfaces a festival it has a real date for.
 
-**Shipped:** the redesign (increments 1–7) went to production on 2026-08-22 —
-`rethink-audio-selection` fast-forwarded into `main`, live at
+8. ✅ **You surface** (2026-08-22) — completes Explore · Journey · You. Consolidates
+   the account panel + reset/clear (were scattered in a footer/always-on panel) and
+   the display/sound toggles into one place; reset takes a confirm. `You.svelte`.
+9. ✅ **Festival greeting audio** (2026-08-22) — tap-to-hear the greeting via the
+   browser Mandarin voice, shown only when a real voice exists (degrade, don't lie).
+
+**Shipped:** increments 1–9 are in production (fast-forwarded into `main`), live at
 mandarin.ethanadams.dev. Work continues on the branch; merge again to ship more.
 
-**Next ideas:** festival greeting → tap-to-hear audio; Character Story oracle/seal
-evolution once a licensed glyph dataset is found; a "You" settings surface.
+**Next ideas:** Character Story oracle/seal *evolution* once a licensed glyph
+dataset is found (still deferred — see the note under increment 6); festival
+greeting could upgrade to prebuilt R2 audio if browser-voice quality disappoints.
 
 ### Cleanup left
 - ✅ **Stale word-check copy (honesty bug) — fixed 2026-08-22.** `ToneCoachPanel`
