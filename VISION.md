@@ -89,8 +89,14 @@ Ethan's model, decided 2026-08-20 (these override older SRS/gamified assumptions
   server-owned API and portable `ea-design` tokens are built so RN could reuse
   them. RN would be a React rewrite; that decision is deferred.
 
-*Data gap:* true ancient-form glyphs (oracle/seal) need a source; component
-etymology is derivable now. Prototypes (pitch + clickable app) exist as artifacts.
+*Data status (2026-08-22):* component etymology, radical, meaning, and stroke
+order all ship now, from Make Me a Hanzi's dictionary (self-hosted in
+`public/hanzi-dict.json`, $0/local — same pattern as the stroke graphics). True
+ancient-form glyphs (oracle/seal) stay **deferred**: no free, well-licensed,
+well-covered dataset was found (hanziyuan / Wikimedia coverage + licensing
+unresolved). The Character Story ships on the derivable data; the
+oracle→seal→modern *evolution* view waits on a source. Prototypes (pitch +
+clickable app) exist as artifacts.
 
 ## How the pieces connect
 

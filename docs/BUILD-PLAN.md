@@ -91,7 +91,37 @@ Svelte app ──┬─→ mandarin-api (FastAPI, Lightsail portfolio-backend)
 - Frontend has no prod host yet (local-dev runs against the live backend) — a
   separate later thread.
 
+## Phase 4 — redesign / rework (in progress, branch `rethink-audio-selection`)
+
+Ships to the Vercel **preview** each push; go-live = merge to `main`. Increments
+landed so far (all with tests + build green):
+
+1. ✅ ea-design "Ink & Jade" theme adopted.
+2. ✅ Explore home (CourseHome): no due dates, jade primary, calm copy.
+3. ✅ Auto-judge (no Again/Good/Easy): `logic/autoRating.ts`.
+4. ✅ **Journey screen** (2026-08-22) — progress by *character* (met / sticking
+   well), no due dates; gentle streak; grid of met characters that open a story.
+   `logic/journey.ts` (+test), `components/Journey.svelte`. Pill nav Explore ·
+   Journey in the header.
+5. ✅ **Drawing promoted** (2026-08-22) — `WritingPractice` canvas is now
+   container-sized (240–360px) and touch-friendly (`touch-action:none`, big
+   controls); the in-card entry is a first-class "Trace it" step.
+6. ✅ **Character Story** (2026-08-22) — component breakdown (好 = 女 + 子),
+   radical, meaning, etymology + animated strokes + Trace. Data =
+   `public/hanzi-dict.json` (Make Me a Hanzi subset; `scripts/build-hanzi-dict.mjs`,
+   manual — builds use the committed JSON, no network). Reached from the Journey
+   grid and by tapping any hanzi in a revealed answer. **Ancient-form (oracle/
+   seal) evolution deferred** — no free, well-licensed, well-covered dataset;
+   ships on derivable component etymology for now.
+
+**Next:** cultural festivals in season; then, on Ethan's approval, merge
+`rethink-audio-selection` → `main` to ship the redesign to mandarin.ethanadams.dev.
+
 ### Cleanup left
+- **Stale word-check copy (honesty bug):** `ToneCoachPanel` still says word check
+  is a "~230 MB download, runs on your device — no audio leaves it." That was the
+  retired on-device Whisper; word check is now server-side (clip uploaded to
+  `/v1/transcribe`). Copy must be corrected — audio *does* leave the device now.
 - The Cloudflare Worker still carries the now-unused `/v1/blob` sync route (dead
   code — the app no longer calls it). Trim the Worker to audio-only when convenient.
 - A real browser E2E of the account + word-check loop (needs a human + mic).
