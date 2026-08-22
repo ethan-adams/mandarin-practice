@@ -14,6 +14,8 @@
   import ListeningPractice from './components/ListeningPractice.svelte';
   import SessionSummary from './components/SessionSummary.svelte';
   import AccountPanel from './components/AccountPanel.svelte';
+  import Journey from './components/Journey.svelte';
+  import CharacterStory from './components/CharacterStory.svelte';
 
   const settings = new PracticeSettings();
   const session = new PracticeSession(() => toneCoach.reset());
@@ -50,6 +52,14 @@
     session.setMode(mode);
   }
 
+  function openStory(char: string) {
+    session.showStory(char);
+  }
+
+  const storyBackLabel = $derived(
+    session.storyReturn === 'journey' ? 'Journey' : session.storyReturn === 'cards' ? 'Back to card' : 'Explore',
+  );
+
   function beginContrastDrill(pairId: string) {
     session.practiceView = 'cards';
     evidence.beginDrill(pairId);
@@ -77,7 +87,7 @@
       event.target instanceof HTMLTextAreaElement ||
       event.target instanceof HTMLAnchorElement
     ) return;
-    if (session.practiceView === 'home') return;
+    if (session.practiceView === 'home' || session.practiceView === 'journey' || session.practiceView === 'story') return;
     if (session.practiceView === 'summary') {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
@@ -150,6 +160,12 @@
       <span class="eyebrow">Mandarin</span>
       <h1>Explore Chinese</h1>
     </div>
+    {#if session.practiceView === 'home' || session.practiceView === 'journey'}
+      <nav class="surface-nav" aria-label="Sections">
+        <button class:active={session.practiceView === 'home'} onclick={() => session.goHome()}>Explore</button>
+        <button class:active={session.practiceView === 'journey'} onclick={() => session.showJourney()}>Journey</button>
+      </nav>
+    {/if}
   </header>
 
   <!-- The live region stays mounted so screen readers reliably announce the
@@ -174,6 +190,15 @@
       onStartSection={(lessonIds, label) => session.startSection(lessonIds, label)}
       onQuickMode={(mode) => session.startGlobal(mode)}
       onShowListening={() => session.showListeningPractice()}
+    />
+  {:else if session.practiceView === 'journey'}
+    <Journey {session} onOpenStory={openStory} onExplore={() => session.startContinue()} />
+  {:else if session.practiceView === 'story' && session.storyChar}
+    <CharacterStory
+      char={session.storyChar}
+      onClose={() => session.closeStory()}
+      onOpenStory={openStory}
+      backLabel={storyBackLabel}
     />
   {:else}
     <div class="practice-layout">
@@ -205,6 +230,7 @@
             onReveal={reveal}
             onBeginDrill={beginContrastDrill}
             onPlayDrillCue={(kind) => void playDrillCue(kind)}
+            onOpenStory={openStory}
           />
         {:else}
           <div class="empty-state">
@@ -298,6 +324,36 @@
 
   .practice-title {
     min-width: 0;
+  }
+
+  .surface-nav {
+    display: inline-flex;
+    flex: 0 0 auto;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-pill, 999px);
+    background: var(--mandarin-panel);
+  }
+
+  .surface-nav button {
+    min-height: 38px;
+    padding: 0 18px;
+    border-radius: var(--radius-pill, 999px);
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 800;
+    font-size: 14px;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+
+  .surface-nav button:hover {
+    color: var(--text-primary);
+  }
+
+  .surface-nav button.active {
+    background: var(--accent-primary);
+    color: #fff;
   }
 
   .eyebrow {

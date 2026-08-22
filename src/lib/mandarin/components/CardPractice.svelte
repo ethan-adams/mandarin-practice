@@ -22,6 +22,7 @@
     onReveal,
     onBeginDrill,
     onPlayDrillCue,
+    onOpenStory,
   }: {
     session: PracticeSession;
     settings: PracticeSettings;
@@ -32,11 +33,16 @@
     onReveal: () => void;
     onBeginDrill: (pairId: string) => void;
     onPlayDrillCue: (kind: 'target' | 'contrast') => void;
+    onOpenStory: (char: string) => void;
   } = $props();
 
   let currentCard = $derived(session.currentCard);
   let currentPinyin = $derived(currentCard ? pinyinText(currentCard.pinyin) : '');
   let currentParts = $derived(currentCard ? pinyinParts(currentCard.pinyin) : []);
+  // Each Han character in the answer opens its Character Story; punctuation and
+  // spaces stay inert text.
+  const isHan = (ch: string) => /\p{Script=Han}/u.test(ch);
+  let answerChars = $derived([...(currentCard?.answerZh ?? '')]);
 
   // The app judges you: derive the schedule from how you actually did (tone
   // contour + word recognition). Null when you didn't speak — then we fall back
@@ -96,7 +102,13 @@
       <div class="answer-topline">
         <div>
           <span class="prompt-label">Answer</span>
-          <p lang="zh-CN">{currentCard.answerZh}</p>
+          <p class="answer-zh" lang="zh-CN">
+            {#each answerChars as ch, i (i)}
+              {#if isHan(ch)}
+                <button class="hanzi" onclick={() => onOpenStory(ch)} aria-label={`See the story of ${ch}`}>{ch}</button>
+              {:else}<span>{ch}</span>{/if}
+            {/each}
+          </p>
         </div>
         <button
           class="speak-button"
@@ -129,8 +141,12 @@
       {#if currentCard.notes}<small class="note">{currentCard.notes}</small>{/if}
 
       <div class="writing-toggle">
-        <button type="button" onclick={() => (showWriting = !showWriting)} aria-expanded={showWriting}>
-          {showWriting ? 'Hide writing practice' : '✍ Practice writing'}
+        <button type="button" class="trace-step" onclick={() => (showWriting = !showWriting)} aria-expanded={showWriting}>
+          <span class="trace-icon" aria-hidden="true">✍</span>
+          <span class="trace-copy">
+            <strong>{showWriting ? 'Hide tracing' : 'Trace it'}</strong>
+            <small>Write the strokes with your finger or mouse</small>
+          </span>
         </button>
       </div>
       {#if showWriting}
@@ -301,6 +317,30 @@
     font-weight: 880;
   }
 
+  .answer-zh {
+    font-family: var(--font-han, inherit);
+  }
+
+  /* Each character is a quiet doorway into its story; the affordance shows on
+     hover/focus so the answer still reads as one word at rest. */
+  .hanzi {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: color 120ms ease, background-color 120ms ease;
+  }
+  .hanzi:hover,
+  .hanzi:focus-visible {
+    color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    outline: none;
+  }
+
   .speak-button {
     display: grid;
     place-items: center;
@@ -377,17 +417,45 @@
   }
 
   .writing-toggle {
-    margin-top: 18px;
+    margin-top: 20px;
   }
 
-  .writing-toggle button {
-    min-height: 40px;
-    padding: 0 16px;
-    border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--bg-primary) 70%, var(--bg-secondary));
+  .trace-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 60px;
+    padding: 12px 18px;
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 38%, var(--border-primary));
+    border-radius: var(--radius, 12px);
+    background: color-mix(in srgb, var(--accent-primary) 7%, var(--mandarin-raised));
     color: var(--text-primary);
+    text-align: left;
+    transition: border-color 120ms ease, background-color 120ms ease, transform 120ms ease;
+  }
+  .trace-step:hover {
+    border-color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 13%, var(--mandarin-raised));
+    transform: translateY(-1px);
+  }
+  .trace-icon {
+    font-size: 22px;
+    color: var(--accent-primary);
+  }
+  .trace-copy {
+    display: grid;
+    gap: 1px;
+  }
+  .trace-copy strong {
+    font-family: var(--font-display, inherit);
+    font-size: 15px;
     font-weight: 800;
+  }
+  .trace-copy small {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
   }
 
   .prompt-actions {

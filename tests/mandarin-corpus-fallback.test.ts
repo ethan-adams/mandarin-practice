@@ -143,19 +143,21 @@ describe('mandarin corpus load-failure visibility', () => {
     // Disable auto-speak first: revealing with audio on would spawn the
     // speech engine's Worker, which jsdom does not provide.
     await fireEvent.click(screen.getByLabelText('Audio'));
-    // Reveal the fallback card's answer mid-practice. The revealed answer
-    // renders in a <p>; the sidebar card list uses <em>, so scope to <p>.
+    // Reveal the fallback card's answer mid-practice. The revealed answer now
+    // renders each hanzi as its own <button> inside <p class="answer-zh"> (each
+    // opens a Character Story), so match on the paragraph's combined text.
     await fireEvent.click(screen.getByRole('button', { name: /Reveal/ }));
-    expect(screen.getByText(MANDARIN_FALLBACK_CARDS[0].answerZh, { selector: 'p' })).toBeInTheDocument();
+    const answerText = () => document.querySelector('p.answer-zh')?.textContent ?? '';
+    expect(answerText()).toContain(MANDARIN_FALLBACK_CARDS[0].answerZh);
 
     failing = false;
     await fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(screen.queryByText(BANNER_TEXT)).not.toBeInTheDocument());
 
-    // The revealed-answer state from the old deck must not present an
-    // unrelated corpus card as already answered.
-    expect(screen.queryByText(corpusCards[0].answerZh, { selector: 'p' })).not.toBeInTheDocument();
-    expect(screen.queryByText(MANDARIN_FALLBACK_CARDS[0].answerZh, { selector: 'p' })).not.toBeInTheDocument();
+    // The retry resets per-card state (answer hidden), so neither the old
+    // fallback card nor an unrelated corpus card is presented as answered.
+    expect(answerText()).not.toContain(corpusCards[0].answerZh);
+    expect(answerText()).not.toContain(MANDARIN_FALLBACK_CARDS[0].answerZh);
   });
 
   it('disables the retry button while a retry is in flight', async () => {

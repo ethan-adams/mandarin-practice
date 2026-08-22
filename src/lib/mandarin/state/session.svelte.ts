@@ -20,7 +20,7 @@ import { loadPracticeDays, recordPracticeDay, savePracticeDays } from '../logic/
 import { lessonLabel } from '../logic/lessons';
 
 export type Mode = 'due' | 'new' | 'all';
-export type PracticeView = 'home' | 'cards' | 'listening' | 'summary';
+export type PracticeView = 'home' | 'cards' | 'listening' | 'summary' | 'journey' | 'story';
 
 /** Cards per session batch before the summary offers a break. */
 export const SESSION_BATCH = 15;
@@ -53,6 +53,10 @@ export class PracticeSession {
   sessionBatchStart = $state(0);
   /** Days with at least one rating; feeds the summary's streak. */
   practiceDays = $state<string[]>([]);
+  /** Character whose story is open (Character Story view); null otherwise. */
+  storyChar = $state<string | null>(null);
+  /** View to return to when the Character Story closes. */
+  storyReturn = $state<PracticeView>('home');
 
   readonly fallbackCards = MANDARIN_FALLBACK_CARDS;
 
@@ -190,6 +194,28 @@ export class PracticeSession {
     }
   }
 
+  /** The Journey map (progress by character; no due dates). */
+  showJourney() {
+    this.practiceView = 'journey';
+    this.showAnswer = false;
+    this.#onReset();
+  }
+
+  /** Open a character's story; remembers where to return on close. */
+  showStory(char: string, from: PracticeView = this.practiceView) {
+    this.storyChar = char;
+    // Never return into a transient story view; fall back to the Journey/home hub.
+    this.storyReturn = from === 'story' ? 'journey' : from;
+    this.practiceView = 'story';
+    this.showAnswer = false;
+    this.#onReset();
+  }
+
+  closeStory() {
+    this.practiceView = this.storyReturn;
+    this.storyChar = null;
+  }
+
   selectCard(index: number) {
     // Picking a card from the queue always lands in card practice - from the
     // summary view this resumes the session at the chosen card.
@@ -253,8 +279,12 @@ export class PracticeSession {
     const slug = window.location.pathname.match(/^\/mandarin\/([^/]+)/)?.[1];
     if (!slug) {
       // Never yanks the user out of listening practice, which lives on the
-      // bare path. Card practice and the session summary both return home.
-      if (this.practiceView === 'cards' || this.practiceView === 'summary') this.practiceView = 'home';
+      // bare path. Card practice, the summary, and the transient hub views all
+      // return home.
+      if (['cards', 'summary', 'journey', 'story'].includes(this.practiceView)) {
+        this.practiceView = 'home';
+        this.storyChar = null;
+      }
       return;
     }
     this.syncCardFromPath();
