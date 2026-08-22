@@ -116,7 +116,7 @@
     {:else}
       <div class="word-check-row">
         <button type="button" class="word-check-enable" onclick={() => void toneCoach.enableWordCheck()}>Enable word check</button>
-        <small>Checks you said the right word, in any browser. One-time ~230 MB download, then runs on your device — no audio leaves it.</small>
+        <small>Checks you said the right word. A short recording is sent to the practice server to read back, then discarded — never stored.</small>
       </div>
     {/if}
     {#if toneCoach.whisperState === 'error'}
