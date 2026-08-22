@@ -118,10 +118,9 @@ landed so far (all with tests + build green):
 `rethink-audio-selection` → `main` to ship the redesign to mandarin.ethanadams.dev.
 
 ### Cleanup left
-- **Stale word-check copy (honesty bug):** `ToneCoachPanel` still says word check
-  is a "~230 MB download, runs on your device — no audio leaves it." That was the
-  retired on-device Whisper; word check is now server-side (clip uploaded to
-  `/v1/transcribe`). Copy must be corrected — audio *does* leave the device now.
+- ✅ **Stale word-check copy (honesty bug) — fixed 2026-08-22.** `ToneCoachPanel`
+  now says word check sends a short clip to the practice server (transcribed then
+  discarded), instead of the retired on-device "~230 MB, no audio leaves it" copy.
 - The Cloudflare Worker still carries the now-unused `/v1/blob` sync route (dead
   code — the app no longer calls it). Trim the Worker to audio-only when convenient.
 - A real browser E2E of the account + word-check loop (needs a human + mic).
