@@ -22,6 +22,10 @@
 
   let overall = $derived(unitProgress(session.cards, session.reviewState));
   let sections = $derived(courseSections(session.cards, session.deckUnits));
+  // The natural first bite for a brand-new learner: the first unit of the first
+  // section (HSK 1 · Greetings on the real deck).
+  let firstUnit = $derived(sections[0]?.units[0] ?? null);
+  let isNew = $derived(overall.seen === 0);
   // Culture over gamification: when a festival is near, greet it — otherwise
   // nothing shows (no year-round banner).
   let festival = $derived(upcomingFestival());
@@ -29,10 +33,8 @@
   // Explore, not a review queue: no "due" counts, no guilt. We frame progress as
   // ground covered; the adaptive engine quietly resurfaces weak items behind the
   // "Strengthen" entry rather than nagging with due dates.
-  let continueDetail = $derived.by(() => {
-    if (overall.seen === 0) return 'Start anywhere — pick a track below and go.';
-    return `You've met ${overall.seen} of ${overall.total} words. Keep the thread going.`;
-  });
+  // Only shown to returning learners (new users get the "Start here" hero).
+  let continueDetail = $derived(`You've met ${overall.seen} of ${overall.total} words. Keep the thread going.`);
 
   function progressOf(unit: CourseUnit) {
     return unitProgress(unit.cards, session.reviewState);
@@ -50,18 +52,37 @@
     <FestivalCard upcoming={festival} />
   {/if}
 
-  <section class="hero" aria-label="Continue learning">
-    <div class="hero-copy">
-      <span class="hero-kicker">{overall.seen ? 'Pick up where you left off' : 'Start exploring'}</span>
-      <strong>{continueDetail}</strong>
-      <div class="hero-bar" role="img" aria-label={`${overall.mastered} of ${overall.total} words sticking well`}>
-        <span class="bar-seen" style={`width: ${overall.total ? (overall.seen / overall.total) * 100 : 0}%`}></span>
-        <span class="bar-mastered" style={`width: ${overall.total ? (overall.mastered / overall.total) * 100 : 0}%`}></span>
+  {#if isNew}
+    <section class="hero start" aria-label="Start learning">
+      <div class="hero-copy">
+        <span class="hero-kicker">New here? Start here</span>
+        <strong>Begin with {firstUnit ? firstUnit.meta.title : 'the basics'} — everyday Mandarin, one phrase at a time.</strong>
+        <small>Learn as you go. The app scores your speaking and quietly brings back what needs work — no due dates, no streak pressure.</small>
       </div>
-      <small>{overall.mastered} sticking well · {overall.seen} met</small>
-    </div>
-    <button class="continue-button" onclick={onContinue}>Continue</button>
-  </section>
+      <button class="continue-button" onclick={() => (firstUnit ? onStartUnit(firstUnit.meta.id) : onContinue())}>
+        {firstUnit ? `Start ${firstUnit.meta.title}` : 'Start'}
+      </button>
+    </section>
+
+    <ul class="how" aria-label="How it works">
+      <li><span class="how-icon" aria-hidden="true">🗣</span><strong>Speak it</strong><small>Say the answer out loud — the app listens for your tones and words.</small></li>
+      <li><span class="how-icon" aria-hidden="true">✍</span><strong>Trace it</strong><small>Write the character stroke by stroke to make it stick.</small></li>
+      <li><span class="how-icon seal" aria-hidden="true">印</span><strong>See its story</strong><small>Tap any character to see where it came from.</small></li>
+    </ul>
+  {:else}
+    <section class="hero" aria-label="Continue learning">
+      <div class="hero-copy">
+        <span class="hero-kicker">Pick up where you left off</span>
+        <strong>{continueDetail}</strong>
+        <div class="hero-bar" role="img" aria-label={`${overall.mastered} of ${overall.total} words sticking well`}>
+          <span class="bar-seen" style={`width: ${overall.total ? (overall.seen / overall.total) * 100 : 0}%`}></span>
+          <span class="bar-mastered" style={`width: ${overall.total ? (overall.mastered / overall.total) * 100 : 0}%`}></span>
+        </div>
+        <small>{overall.mastered} sticking well · {overall.seen} met</small>
+      </div>
+      <button class="continue-button" onclick={onContinue}>Continue</button>
+    </section>
+  {/if}
 
   <nav class="quick-modes" aria-label="Ways to practice">
     <button class="strengthen" onclick={() => onQuickMode('due')}>
@@ -140,11 +161,64 @@
     box-shadow: var(--shadow-sm);
   }
 
+  .hero.start {
+    background:
+      linear-gradient(120deg, color-mix(in srgb, var(--accent-primary) 12%, transparent), transparent 60%),
+      var(--mandarin-raised);
+  }
+
   .hero-copy {
     display: grid;
     gap: 8px;
     min-width: 0;
     flex: 1 1 auto;
+  }
+
+  .how {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .how li {
+    display: grid;
+    gap: 3px;
+    padding: 14px;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius, 12px);
+    background: var(--mandarin-raised);
+  }
+
+  .how-icon {
+    font-size: 20px;
+    line-height: 1;
+  }
+  .how-icon.seal {
+    color: var(--mandarin-red);
+    font-family: var(--font-han, serif);
+    font-weight: 700;
+  }
+
+  .how strong {
+    color: var(--text-primary);
+    font-family: var(--font-display, inherit);
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .how small {
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    line-height: 1.4;
+  }
+
+  @media (max-width: 640px) {
+    .how {
+      grid-template-columns: 1fr;
+    }
   }
 
   .hero-kicker {

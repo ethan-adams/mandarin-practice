@@ -52,8 +52,10 @@ function stubCorpusFetch() {
   );
 }
 
+// A stable "home is loaded" signal in both the first-run and returning states
+// (the returning hero shows Continue; the first-run hero shows Start …).
 async function findCourseHome() {
-  return await screen.findByRole('button', { name: 'Continue' });
+  return await screen.findByRole('button', { name: 'Practice Greetings' });
 }
 
 beforeEach(() => {
@@ -95,11 +97,24 @@ describe('mandarin course home', () => {
     await waitFor(() => expect(unit).toHaveTextContent('1 of 2 sticking well'));
   });
 
-  it('Continue starts a practice session with the queue visible and no answers leaked', async () => {
+  it('a new learner gets a guided first-run start, not a wall of cards', async () => {
     render(MandarinPractice);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Practice Greetings' })).toBeInTheDocument());
-    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    // No progress yet: the hero points at the first lesson and explains the loop.
+    expect(await screen.findByRole('button', { name: 'Start Greetings' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Continue' })).not.toBeInTheDocument();
+    expect(screen.getByText('Speak it')).toBeInTheDocument();
+    expect(screen.getByText('See its story')).toBeInTheDocument();
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Start Greetings' }));
+    const queue = await screen.findByLabelText('Cards in current session');
+    expect(within(queue).getByText('How would you say: hello?')).toBeInTheDocument();
+  });
+
+  it('starting practice shows the queue visible and no answers leaked', async () => {
+    render(MandarinPractice);
+
+    await fireEvent.click(await screen.findByRole('button', { name: 'Start Greetings' }));
 
     expect(await screen.findByRole('button', { name: /Reveal/ })).toBeInTheDocument();
     const queue = screen.getByLabelText('Cards in current session');
@@ -139,8 +154,7 @@ describe('mandarin course home', () => {
   it('back to course returns to the home view', async () => {
     render(MandarinPractice);
 
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Practice Greetings' })).toBeInTheDocument());
-    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await fireEvent.click(await screen.findByRole('button', { name: 'Start Greetings' }));
     await fireEvent.click(await screen.findByRole('button', { name: '← Course' }));
 
     expect(await findCourseHome()).toBeInTheDocument();

@@ -98,7 +98,7 @@ describe('mandarin corpus load-failure visibility', () => {
 
     await findBanner();
     // Practice is one tap away from the course home even on the fallback deck.
-    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await fireEvent.click(screen.getByRole('button', { name: /Browse all/ }));
     expect(screen.getAllByText(MANDARIN_FALLBACK_CARDS[0].promptEn).length).toBeGreaterThan(0);
   });
 
@@ -127,7 +127,7 @@ describe('mandarin corpus load-failure visibility', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
 
     await waitFor(() => expect(screen.queryByText(BANNER_TEXT)).not.toBeInTheDocument());
-    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await fireEvent.click(screen.getByRole('button', { name: /Browse all/ }));
     expect(screen.getAllByText(corpusCards[0].promptEn).length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
   });
@@ -139,7 +139,7 @@ describe('mandarin corpus load-failure visibility', () => {
     render(MandarinPractice);
 
     await findBanner();
-    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await fireEvent.click(screen.getByRole('button', { name: /Browse all/ }));
     // Disable auto-speak first: revealing with audio on would spawn the
     // speech engine's Worker, which jsdom does not provide.
     await fireEvent.click(screen.getByLabelText('Audio'));
@@ -194,7 +194,7 @@ describe('mandarin corpus load-failure visibility', () => {
     render(MandarinPractice);
 
     await findBanner();
-    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await fireEvent.click(screen.getByRole('button', { name: /Browse all/ }));
     await screen.findByRole('button', { name: /Reveal/ });
 
     failing = false;
@@ -251,7 +251,7 @@ describe('mandarin corpus load-failure visibility', () => {
     render(MandarinPractice);
 
     await waitFor(() => expect(screen.getByRole('button', { name: 'Practice Lesson 1' })).toBeInTheDocument());
-    await fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await fireEvent.click(screen.getByRole('button', { name: /Browse all/ }));
     await waitFor(() => expect(screen.getAllByText(corpusCards[0].promptEn).length).toBeGreaterThan(0));
     expect(screen.queryByText(BANNER_TEXT)).not.toBeInTheDocument();
   });
