@@ -125,6 +125,37 @@ describe('mandarin course home', () => {
     }
   });
 
+  it('Strengthen stays disabled until there are genuine weak spots', async () => {
+    render(MandarinPractice);
+
+    const strengthen = await screen.findByRole('button', { name: /Strengthen/ });
+    expect(strengthen).toBeDisabled();
+    expect(strengthen).toHaveTextContent('nothing due yet');
+  });
+
+  it('Strengthen practices only seen-and-due cards, not never-seen ones', async () => {
+    // hsk-hello was seen and is due again; the others were never seen and must
+    // NOT count as weak spots.
+    window.localStorage.setItem(
+      'mandarin-practice-demo-state-v2',
+      JSON.stringify({
+        'hsk-hello': { attempts: 3, correct: 1, misses: 2, streak: 0, intervalDays: 0, due: '2000-01-01' },
+      }),
+    );
+    render(MandarinPractice);
+
+    // Wait for the corpus (which holds hsk-hello) before reading the count.
+    await screen.findByRole('button', { name: 'Practice Greetings' });
+    const strengthen = screen.getByRole('button', { name: /Strengthen/ });
+    await waitFor(() => expect(strengthen).toHaveTextContent('1 to review'));
+    await fireEvent.click(strengthen);
+
+    const queue = await screen.findByLabelText('Cards in current session');
+    expect(within(queue).getByText('How would you say: hello?')).toBeInTheDocument();
+    expect(within(queue).queryByText('How would you say: thank you?')).not.toBeInTheDocument();
+    expect(within(queue).queryByText('How would you say: tea?')).not.toBeInTheDocument();
+  });
+
   it('a unit card starts practice scoped to that unit', async () => {
     render(MandarinPractice);
 

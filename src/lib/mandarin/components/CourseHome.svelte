@@ -10,6 +10,7 @@
     onStartUnit,
     onStartSection,
     onQuickMode,
+    onStrengthen,
     onShowListening,
   }: {
     session: PracticeSession;
@@ -17,6 +18,7 @@
     onStartUnit: (lessonId: string) => void;
     onStartSection: (lessonIds: string[], label: string) => void;
     onQuickMode: (mode: Mode) => void;
+    onStrengthen: () => void;
     onShowListening: () => void;
   } = $props();
 
@@ -85,9 +87,9 @@
   {/if}
 
   <nav class="quick-modes" aria-label="Ways to practice">
-    <button class="strengthen" onclick={() => onQuickMode('due')}>
+    <button class="strengthen" onclick={onStrengthen} disabled={session.weakCount === 0}>
       <strong>✦</strong>
-      <span>Strengthen<small>weak spots resurface</small></span>
+      <span>Strengthen<small>{session.weakCount > 0 ? `${session.weakCount} to review` : 'nothing due yet'}</small></span>
     </button>
     <button onclick={() => onQuickMode('all')}>
       <strong>{session.cards.length}</strong>
@@ -310,9 +312,14 @@
     transition: border-color 120ms ease, background-color 120ms ease;
   }
 
-  .quick-modes button:hover {
+  .quick-modes button:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--accent-primary) 40%, var(--border-primary));
     background: color-mix(in srgb, var(--accent-primary) 5%, var(--mandarin-raised));
+  }
+
+  .quick-modes button:disabled {
+    opacity: 0.55;
+    cursor: default;
   }
 
   .quick-modes strong {

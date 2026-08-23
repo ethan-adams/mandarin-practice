@@ -19,7 +19,9 @@ import {
 import { loadPracticeDays, recordPracticeDay, savePracticeDays } from '../logic/sessionStats';
 import { lessonLabel } from '../logic/lessons';
 
-export type Mode = 'due' | 'new' | 'all';
+// 'weak' = seen AND due (genuine weak spots), distinct from 'due' which also
+// counts never-seen cards as available. Powers the home's "Strengthen" entry.
+export type Mode = 'due' | 'new' | 'all' | 'weak';
 export type PracticeView = 'home' | 'cards' | 'listening' | 'summary' | 'journey' | 'story' | 'you';
 
 /** Cards per session batch before the summary offers a break. */
@@ -66,6 +68,8 @@ export class PracticeSession {
   attempted = $derived(this.cards.filter((card) => (this.reviewState[card.id]?.attempts ?? 0) > 0).length);
   dueCount = $derived(this.cards.filter((card) => this.due(card)).length);
   newCount = $derived(this.cards.filter((card) => (this.reviewState[card.id]?.attempts ?? 0) === 0).length);
+  /** Seen cards that are due again — genuine weak spots for "Strengthen". */
+  weakCount = $derived(this.cards.filter((card) => (this.reviewState[card.id]?.attempts ?? 0) > 0 && this.due(card)).length);
   /**
    * Cards planned for this session: the batch target, capped by what the
    * current mode can still serve. In due/new modes rated cards leave the
@@ -116,6 +120,7 @@ export class PracticeSession {
       if (scope && !scope.has(card.lessonId)) return false;
       const item = this.reviewState[card.id];
       if (nextMode === 'new') return !item || item.attempts === 0;
+      if (nextMode === 'weak') return (item?.attempts ?? 0) > 0 && this.due(card);
       if (nextMode === 'due') return this.due(card);
       return true;
     });
@@ -183,6 +188,11 @@ export class PracticeSession {
     this.scopeLessons = null;
     this.scopeLabel = '';
     this.setMode(mode);
+  }
+
+  /** "Strengthen": practice only genuine weak spots (seen and due). */
+  startStrengthen() {
+    this.startGlobal('weak');
   }
 
   goHome() {

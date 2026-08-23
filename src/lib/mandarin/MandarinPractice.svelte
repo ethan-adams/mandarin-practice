@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Rating } from './logic/srs';
+  import { deriveAutoRating } from './logic/autoRating';
   import { PracticeSession, type Mode } from './state/session.svelte';
   import { PracticeSettings } from './state/settings.svelte';
   import { SpeechController } from './state/speech.svelte';
@@ -114,7 +115,16 @@
     }
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault();
-      if (!session.showAnswer) reveal();
+      if (!session.showAnswer) {
+        reveal();
+        return;
+      }
+      // Answer already revealed: Enter/Space advances the judged card (the
+      // "Next" action). When there was no spoken attempt the app can't judge,
+      // so the learner still picks "knew it / show me again" explicitly.
+      const auto = deriveAutoRating(toneCoach.nativeMatch, toneCoach.recognitionResult);
+      if (auto) rate(auto.rating);
+      return;
     }
     if (!session.showAnswer) return;
     if (event.key === '1') rate('wrong');
@@ -190,6 +200,7 @@
       onStartUnit={(lessonId) => session.startUnit(lessonId)}
       onStartSection={(lessonIds, label) => session.startSection(lessonIds, label)}
       onQuickMode={(mode) => session.startGlobal(mode)}
+      onStrengthen={() => session.startStrengthen()}
       onShowListening={() => session.showListeningPractice()}
     />
   {:else if session.practiceView === 'journey'}
