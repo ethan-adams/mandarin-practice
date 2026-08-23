@@ -35,6 +35,17 @@ describe('deriveAutoRating', () => {
     expect(deriveAutoRating(tone('missed'), word('matched'))?.rating).toBe('hard');
   });
 
+  it('a close-but-not-exact word never counts as fully correct', () => {
+    // Good tone must not let a close word claim full credit — honest feedback.
+    const verdict = deriveAutoRating(tone('matched'), word('close'))!;
+    expect(verdict.rating).toBe('hard');
+    expect(verdict.headline).toBe('So close');
+    expect(verdict.detail.toLowerCase()).toContain('nearly');
+    expect(verdict.detail.toLowerCase()).not.toContain('both landed');
+    // Still capped at 'hard' when the tone is off too.
+    expect(deriveAutoRating(tone('missed'), word('close'))?.rating).toBe('hard');
+  });
+
   it('tone-only attempt (no word check) is judged by the contour', () => {
     expect(deriveAutoRating(tone('matched'), null)?.rating).toBe('correct');
     expect(deriveAutoRating(tone('close'), null)?.rating).toBe('hard');

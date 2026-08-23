@@ -22,13 +22,27 @@ export function deriveAutoRating(
   const toneSpoke = !!tone;
   if (!wordSpoke && !toneSpoke) return null; // no attempt — caller shows the fallback
 
-  // Said a different word: the clearest "again".
-  if (wordSpoke && word!.status === 'missed') {
-    return {
-      rating: 'wrong',
-      headline: 'Not quite',
-      detail: 'That sounded like a different word — give it another go.',
-    };
+  // When word check ran, it's the strongest signal — resolve it before tone.
+  if (wordSpoke) {
+    // Said a different word: the clearest "again".
+    if (word!.status === 'missed') {
+      return {
+        rating: 'wrong',
+        headline: 'Not quite',
+        detail: 'That sounded like a different word — give it another go.',
+      };
+    }
+    // Nearly the right word (extra/missing syllable, or a near-homophone): never
+    // full credit, and never claim "right word" — say honestly it was close.
+    if (word!.status === 'close') {
+      const toneNote = tone?.status === 'matched' ? 'your tone was on, though' : 'and keep working the tone';
+      return {
+        rating: 'hard',
+        headline: 'So close',
+        detail: `Nearly the right word — ${toneNote}.`,
+      };
+    }
+    // word matched → fall through and let the tone shape decide the polish.
   }
 
   // Right word (or tone-only attempt): let the tone shape decide the polish.

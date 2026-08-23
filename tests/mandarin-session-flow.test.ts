@@ -119,8 +119,9 @@ describe('mandarin session flow', () => {
     }
     panel = await screen.findByLabelText('Session summary');
     expect(within(panel).getByText('cards done').previousElementSibling).toHaveTextContent('20');
-    // The whole unit is scheduled ahead now; the outlook says when.
-    expect(within(panel).getByText(/next 20 reviews on/)).toBeInTheDocument();
+    // Explore, not a review queue: the outlook encourages without due dates.
+    expect(within(panel).getByText(/still ahead|resurface on their own/)).toBeInTheDocument();
+    expect(panel.textContent).not.toMatch(/due today|reviews on \d/);
     // Nothing left in this queue: no keep-going, back to course instead.
     expect(within(panel).queryByRole('button', { name: 'Keep going' })).not.toBeInTheDocument();
     await fireEvent.click(within(panel).getByRole('button', { name: 'Back to course' }));

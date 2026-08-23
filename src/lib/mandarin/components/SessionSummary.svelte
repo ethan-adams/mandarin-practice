@@ -17,14 +17,14 @@
   let outlook = $derived(dueOutlook(session.cards, session.reviewState));
   let moreAvailable = $derived(session.selectedCards.length > 0);
 
+  // Explore, not a review queue: no "due today" counts, no scheduled dates
+  // (that guilt is exactly what the redesign removed). Just an honest, gentle
+  // note on what's ahead — weak items resurface quietly under the hood.
   let outlookLine = $derived.by(() => {
-    const parts: string[] = [];
-    if (outlook.dueNow) parts.push(`${outlook.dueNow} review${outlook.dueNow === 1 ? '' : 's'} still due today`);
-    if (outlook.fresh) parts.push(`${outlook.fresh} new card${outlook.fresh === 1 ? '' : 's'} to learn`);
-    if (!outlook.dueNow && outlook.nextDueDate) {
-      parts.push(`next ${outlook.nextDueCount} review${outlook.nextDueCount === 1 ? '' : 's'} on ${outlook.nextDueDate}`);
+    if (outlook.fresh > 0) {
+      return `${outlook.fresh} new ${outlook.fresh === 1 ? 'word' : 'words'} still ahead — no rush.`;
     }
-    return parts.length ? parts.join(' · ') : 'Nothing scheduled - you are all caught up.';
+    return "You've met every word here. The tricky ones will resurface on their own.";
   });
 </script>
 
@@ -138,14 +138,14 @@
   .keep-going {
     min-height: 52px;
     padding: 0 26px;
-    background: var(--mandarin-red);
+    background: var(--accent-primary);
     color: white;
     font-size: 16px;
     font-weight: 860;
   }
 
   .keep-going:hover {
-    background: var(--mandarin-red-dark);
+    background: var(--accent-hover);
   }
 
   .back-home {
