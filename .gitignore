@@ -10,3 +10,4 @@ public/hanzi/
 
 # Visual-review screenshots (regenerate with npm run shots)
 docs/shots/
+docs/e2e/
