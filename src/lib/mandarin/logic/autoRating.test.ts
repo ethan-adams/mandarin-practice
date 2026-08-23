@@ -9,10 +9,10 @@ const tone = (status: ContourComparison['status']): ContourComparison => ({
   correlation: 0.5,
   status,
 });
-const word = (status: PronunciationResult['status']): PronunciationResult => ({
+const word = (status: PronunciationResult['status'], expected = '好'): PronunciationResult => ({
   status,
-  normalized_expected: '好',
-  normalized_transcript: status === 'missed' ? '号' : '好',
+  normalized_expected: expected,
+  normalized_transcript: status === 'missed' ? '号' : expected,
   similarity: status === 'missed' ? 0.2 : 0.95,
 });
 
@@ -22,8 +22,17 @@ describe('deriveAutoRating', () => {
     expect(deriveAutoRating(null, word('no_speech'))).toBeNull();
   });
 
-  it('wrong when the recognized word is different', () => {
-    expect(deriveAutoRating(tone('matched'), word('missed'))?.rating).toBe('wrong');
+  it('wrong when a multi-syllable answer is heard as a different word', () => {
+    expect(deriveAutoRating(tone('matched'), word('missed', '谢谢'))?.rating).toBe('wrong');
+  });
+
+  it('a single-syllable read-back miss never auto-fails — the recognizer is not trusted there', () => {
+    // Whisper routinely mis-hears a lone syllable, so a single-char miss must not
+    // become "wrong". With a matched tone it hedges; with no tone it defers.
+    const withTone = deriveAutoRating(tone('matched'), word('missed', '爱'))!;
+    expect(withTone.rating).toBe('hard');
+    expect(withTone.headline).toBe('Check the word');
+    expect(deriveAutoRating(null, word('missed', '爱'))).toBeNull();
   });
 
   it('correct when word matches and tone matches', () => {

@@ -7,9 +7,7 @@
   import type { PracticeSettings } from '../state/settings.svelte';
   import type { SpeechController } from '../state/speech.svelte';
   import type { ToneCoachController } from '../state/toneCoach.svelte';
-  import type { EvidenceStore } from '../state/evidence.svelte';
   import ToneCoachPanel from './ToneCoachPanel.svelte';
-  import ContrastDrillPanel from './ContrastDrillPanel.svelte';
   import WritingPractice from './WritingPractice.svelte';
 
   let {
@@ -17,22 +15,16 @@
     settings,
     speech,
     toneCoach,
-    evidence,
     onRate,
     onReveal,
-    onBeginDrill,
-    onPlayDrillCue,
     onOpenStory,
   }: {
     session: PracticeSession;
     settings: PracticeSettings;
     speech: SpeechController;
     toneCoach: ToneCoachController;
-    evidence: EvidenceStore;
     onRate: (rating: Rating) => void;
     onReveal: () => void;
-    onBeginDrill: (pairId: string) => void;
-    onPlayDrillCue: (kind: 'target' | 'contrast') => void;
     onOpenStory: (char: string) => void;
   } = $props();
 
@@ -77,25 +69,7 @@
     <p class="prompt">{currentCard.promptEn}</p>
   </div>
 
-  <ToneCoachPanel {toneCoach} {settings} answerRevealed={session.showAnswer} />
-
-  {#if toneCoach.explanation && toneCoach.contrastPair}
-    {@const contrastPair = toneCoach.contrastPair}
-    <div class="pronunciation-next-action" aria-label={toneCoach.explanation.ariaLabel}>
-      <span class="lesson-kicker">Next action · {contrastPair.label}</span>
-      <strong>{toneCoach.explanation.title}</strong>
-      <p>{toneCoach.explanation.detail}</p>
-      <small>{contrastPair.prompt}</small>
-      <div>
-        <button aria-label={`Hear target ${contrastPair.target.han}, ${contrastPair.target.pinyin}`} onclick={() => void speech.playContrastCue(contrastPair.target)}>Hear target</button>
-        <button aria-label={`Hear contrast ${contrastPair.contrast.han}, ${contrastPair.contrast.pinyin}`} onclick={() => void speech.playContrastCue(contrastPair.contrast)}>Hear contrast</button>
-        <button onclick={() => onBeginDrill(contrastPair.id)}>Practice this contrast</button>
-        <button onclick={() => void toneCoach.startAssessment()} disabled={!toneCoach.microphoneAvailable}>Try again</button>
-      </div>
-    </div>
-  {/if}
-
-  <ContrastDrillPanel {evidence} {onPlayDrillCue} />
+  <ToneCoachPanel {toneCoach} answerRevealed={session.showAnswer} />
 
   {#if session.showAnswer}
     <div class="answer">
@@ -253,53 +227,6 @@
     margin-top: 34px;
     border-top: 1px solid var(--border-primary);
     padding-top: 28px;
-  }
-
-  .lesson-kicker {
-    display: block;
-    margin-bottom: 5px;
-    color: var(--mandarin-red);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .pronunciation-next-action {
-    display: grid;
-    gap: 8px;
-    max-width: 860px;
-    margin-top: 12px;
-    padding: 13px;
-    border: 1px solid color-mix(in srgb, var(--mandarin-blue) 40%, var(--border-primary));
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--mandarin-blue) 8%, var(--bg-primary));
-  }
-
-  .pronunciation-next-action p {
-    margin: 0;
-    color: var(--text-secondary);
-    line-height: 1.4;
-  }
-
-  .pronunciation-next-action > small {
-    color: var(--text-secondary);
-  }
-
-  .pronunciation-next-action > div {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-  }
-
-  .pronunciation-next-action button {
-    min-height: 36px;
-    padding: 0 11px;
-    border: 1px solid var(--border-primary);
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    font-size: 12px;
-    font-weight: 780;
   }
 
   .answer-topline {

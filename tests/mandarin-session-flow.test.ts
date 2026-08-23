@@ -204,19 +204,17 @@ describe('mandarin session flow', () => {
     expect(within(panel).getByText('day streak').previousElementSibling).toHaveTextContent('2');
   });
 
-  it('hides the tone tiles (the answer) until the learner reveals', async () => {
+  it('hides the answer until the learner reveals', async () => {
     render(MandarinPractice);
 
     await enterPractice('Practice May 25');
     await screen.findByRole('button', { name: /Reveal/ });
 
-    const tonePanel = screen.getByText('Tone coach').closest('.pronunciation-panel') as HTMLElement;
-    // Pre-reveal: no hanzi tiles, just the explainer.
-    expect(within(tonePanel).queryByText('茶')).not.toBeInTheDocument();
-    expect(within(tonePanel).getByText(/appears here after you speak or reveal/)).toBeInTheDocument();
+    // Pre-reveal: the answer hanzi is nowhere on screen (recall integrity).
+    expect(screen.queryByText('茶')).not.toBeInTheDocument();
 
     await fireEvent.click(screen.getByRole('button', { name: /Reveal/ }));
-    expect(within(tonePanel).getByText('茶')).toBeInTheDocument();
+    expect(screen.getAllByText('茶').length).toBeGreaterThan(0);
   });
 
   it('reports an actionable microphone error instead of hanging on Listening', async () => {
@@ -233,9 +231,8 @@ describe('mandarin session flow', () => {
       await fireEvent.click(await screen.findByRole('button', { name: 'Speak' }));
 
       await screen.findByText(/Microphone access is blocked/);
-      const tonePanel = screen.getByText('Tone coach').closest('.pronunciation-panel') as HTMLElement;
-      expect(within(tonePanel).getByText('Error')).toBeInTheDocument();
-      expect(within(tonePanel).queryByText('Listening')).not.toBeInTheDocument();
+      // The card must land on the actionable error, not hang on "Listening…".
+      expect(screen.queryByText('Listening…')).not.toBeInTheDocument();
     } finally {
       // @ts-expect-error cleanup of the test-injected property
       delete navigator.mediaDevices;

@@ -61,19 +61,6 @@
     session.storyReturn === 'journey' ? 'Journey' : session.storyReturn === 'cards' ? 'Back to card' : 'Explore',
   );
 
-  function beginContrastDrill(pairId: string) {
-    session.practiceView = 'cards';
-    evidence.beginDrill(pairId);
-  }
-
-  async function playDrillCue(kind: 'target' | 'contrast') {
-    const pair = evidence.activeDrillPair;
-    if (!evidence.activeDrill || !pair) return;
-    const cue = kind === 'target' ? pair.target : pair.contrast;
-    if (!(await speech.playContrastCue(cue))) return;
-    evidence.updateDrill(kind === 'target' ? 'target_played' : 'contrast_played');
-  }
-
   async function playListeningPrompt() {
     await speech.playContrastCue(listening.currentCue, {
       onAudioUnavailable: () => listening.markAudioUnavailable(),
@@ -228,12 +215,10 @@
         {session}
         {settings}
         {speech}
-        {evidence}
         onGoHome={() => session.goHome()}
         onSetMode={setMode}
         onShowListening={() => session.showListeningPractice()}
         onSelectCard={(index) => session.selectCard(index)}
-        onBeginDrill={beginContrastDrill}
       />
 
       <article class="practice-card">
@@ -247,11 +232,8 @@
             {settings}
             {speech}
             {toneCoach}
-            {evidence}
             onRate={rate}
             onReveal={reveal}
-            onBeginDrill={beginContrastDrill}
-            onPlayDrillCue={(kind) => void playDrillCue(kind)}
             onOpenStory={openStory}
           />
         {:else}

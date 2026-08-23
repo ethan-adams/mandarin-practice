@@ -4,28 +4,23 @@
   import type { PracticeSession, Mode } from '../state/session.svelte';
   import type { PracticeSettings } from '../state/settings.svelte';
   import type { SpeechController } from '../state/speech.svelte';
-  import type { EvidenceStore } from '../state/evidence.svelte';
 
   let {
     session,
     settings,
     speech,
-    evidence,
     onGoHome,
     onSetMode,
     onShowListening,
     onSelectCard,
-    onBeginDrill,
   }: {
     session: PracticeSession;
     settings: PracticeSettings;
     speech: SpeechController;
-    evidence: EvidenceStore;
     onGoHome: () => void;
     onSetMode: (mode: Mode) => void;
     onShowListening: () => void;
     onSelectCard: (index: number) => void;
-    onBeginDrill: (pairId: string) => void;
   } = $props();
 </script>
 
@@ -64,15 +59,6 @@
       </div>
     </div>
   </div>
-
-  {#if evidence.recommendation}
-    <div class="contrast-suggestion">
-      <span class="lesson-kicker">Optional contrast</span>
-      <strong>{evidence.recommendation.pair.label}</strong>
-      <small>Suggested after {evidence.recommendation.qualifyingAttempts} separate high-confidence misses. It will not change due dates.</small>
-      <button onclick={() => onBeginDrill(evidence.recommendation!.pair.id)}>Practice this contrast</button>
-    </div>
-  {/if}
 
   {#if session.practiceView !== 'listening'}
     <div class="lesson-list" aria-label="Cards in current session">
@@ -317,7 +303,6 @@
     line-height: 1.35;
   }
 
-  .contrast-suggestion,
   .listening-intro {
     display: grid;
     gap: 7px;
@@ -328,19 +313,9 @@
     background: color-mix(in srgb, var(--mandarin-gold) 9%, var(--bg-primary));
   }
 
-  .contrast-suggestion small,
   .listening-intro small {
     color: var(--text-secondary);
     line-height: 1.4;
-  }
-
-  .contrast-suggestion button {
-    min-height: 34px;
-    padding: 0 10px;
-    background: var(--mandarin-gold);
-    color: var(--bg-primary);
-    font-size: 12px;
-    font-weight: 800;
   }
 
   @media (max-width: 920px) {

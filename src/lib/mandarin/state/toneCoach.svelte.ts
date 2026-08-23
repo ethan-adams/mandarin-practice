@@ -27,7 +27,9 @@ import {
   toneAssessmentHasVerdict,
   type PitchFrame,
   type ToneAssessmentResult,
+  type ToneStatus,
   type ToneSyllableResult,
+  type ToneSyllableStatus,
 } from '../../utils/mandarinToneAssessment';
 import { contrastPairForPinyin, explainPronunciationEvidence } from '../../utils/mandarinContrastPractice';
 import {
@@ -37,10 +39,42 @@ import {
   type ContourComparison,
 } from '../../utils/mandarinToneReference';
 import { transcribeClip, transcriptionAvailable } from '../../utils/mandarinTranscribe';
-import { characterUnits, type CharacterUnit } from '../logic/pinyin';
+import { characterUnits, pinyinText, type CharacterUnit } from '../logic/pinyin';
 import type { Card } from '../logic/deck';
 
 export type WhisperState = 'off' | 'loading' | 'ready' | 'transcribing' | 'error';
+
+/** One plain-language line about how a spoken take landed. `unknown` means the
+ *  app genuinely could not tell — never a disguised "wrong". */
+export type FeedbackAccent = 'match' | 'near' | 'off' | 'unknown';
+export type SpokenVerdict = { status: FeedbackAccent; line: string };
+
+/** The shape a tone should make, in words a beginner can act on. */
+function toneShape(tone: number): { name: string; hint: string } {
+  switch (tone) {
+    case 1:
+      return { name: 'high, level', hint: 'hold it flat and high' };
+    case 2:
+      return { name: 'rising', hint: 'sweep up like a question' };
+    case 3:
+      return { name: 'dipping', hint: 'dip down, then back up' };
+    case 4:
+      return { name: 'falling', hint: 'start high and drop sharply' };
+    default:
+      return { name: 'neutral', hint: 'keep it light and quick' };
+  }
+}
+
+/** What the learner's pitch actually did, in the same plain vocabulary. */
+function observedShapeWord(observed: ToneSyllableResult['observed']): string {
+  return {
+    level: 'flat',
+    rising: 'rising',
+    dipping: 'dipping',
+    falling: 'falling',
+    unvoiced: 'too quietly to read',
+  }[observed];
+}
 
 /** Reference pitch contours per answerZh, extracted offline from the native
  * clips (factory scripts/gen_contours.py) and shipped as a static JSON. */
@@ -255,8 +289,93 @@ export class ToneCoachController {
   init() {
     this.microphoneAvailable = Boolean(navigator.mediaDevices?.getUserMedia);
     this.textRecognitionAvailable = Boolean(this.#recognitionConstructor());
+    // Word check is what tells you whether you said the right word, so it's on
+    // by default whenever the server can do it — no toggle to hunt for. Local
+    // dev (no API_BASE) quietly falls back to the browser recognizer.
+    if (transcriptionAvailable()) void this.enableWordCheck();
     void this.loadContours();
   }
+
+  /** True when either recognizer (server word check or the browser's) can
+   *  confirm the word — drives the honest "judging by tone only" note. */
+  wordAvailable = $derived(this.wordCheckEnabled || this.textRecognitionAvailable);
+
+  /** How you said the word: right word, near word, wrong word, or genuinely
+   *  unclear. On a single syllable a read-back miss is treated as unclear, not
+   *  wrong — recognizers routinely trip on lone syllables. */
+  wordVerdict = $derived.by((): SpokenVerdict | null => {
+    const result = this.recognitionResult;
+    if (!result) return null;
+    const card = this.#getCard();
+    const expected = card?.answerZh ?? '';
+    const expectedLabel = card ? `${expected} (${pinyinText(card.pinyin)})` : expected;
+    const heard = (result.transcript ?? '').trim();
+    if (result.status === 'no_speech' || !heard) {
+      return { status: 'unknown', line: 'Did not catch any speech — tap Speak and say it once more.' };
+    }
+    if (result.status === 'matched') {
+      return { status: 'match', line: `Heard “${heard}” — that is the word.` };
+    }
+    if (result.status === 'close') {
+      return { status: 'near', line: `Heard “${heard}” — nearly ${expectedLabel}.` };
+    }
+    const expectedUnits = [...expected].filter((ch) => /\p{Script=Han}/u.test(ch)).length;
+    if (expectedUnits <= 1) {
+      return {
+        status: 'unknown',
+        line: `Heard “${heard}”. Read-back is unreliable on a single syllable, so trust your ear — hear ${expectedLabel} and compare.`,
+      };
+    }
+    return { status: 'off', line: `Heard “${heard}” — that is not ${expectedLabel}. Hear it and try again.` };
+  });
+
+  /** How your tone landed, named as a shape you can act on (and, when the app
+   *  can tell, which tone you actually produced). Always hedged as an estimate. */
+  toneVerdict = $derived.by((): SpokenVerdict | null => {
+    const assessment = this.toneAssessment;
+    const hasVerdict = assessment ? toneAssessmentHasVerdict(assessment) : false;
+    const overall: ToneStatus | null = hasVerdict ? assessment!.status : (this.nativeMatch?.status ?? null);
+    if (!overall) return null;
+
+    const graded = (assessment?.syllables ?? []).filter((syllable) => syllable.tone && syllable.tone !== 5);
+    if (hasVerdict && graded.length === 1) {
+      const syllable = graded[0];
+      const want = toneShape(syllable.tone!);
+      const got = observedShapeWord(syllable.observed);
+      if (syllable.status === 'matched') {
+        return { status: 'match', line: `On target — ${syllable.text} is a ${want.name} tone, and your pitch matched.` };
+      }
+      if (syllable.status === 'close') {
+        return { status: 'near', line: `Close — you said it ${got}; ${syllable.text} should be ${want.name} (${want.hint}).` };
+      }
+      return { status: 'off', line: `You said it ${got} — ${syllable.text} is a ${want.name} tone, so ${want.hint}.` };
+    }
+
+    const status: FeedbackAccent = overall === 'matched' ? 'match' : overall === 'close' ? 'near' : 'off';
+    const line =
+      status === 'match'
+        ? 'On target — your pitch tracked the native melody.'
+        : status === 'near'
+          ? 'Close — follow the native melody a little tighter, syllable by syllable.'
+          : 'Off — replay the native audio and match each syllable’s rise and fall.';
+    return { status, line };
+  });
+
+  /** Per-syllable tone dots for multi-syllable answers (empty for one syllable,
+   *  where the tone line already names the shape). */
+  toneDots = $derived.by((): ToneSyllableStatus[] => {
+    const assessment = this.toneAssessment;
+    if (!assessment || !toneAssessmentHasVerdict(assessment) || assessment.syllables.length <= 1) return [];
+    return assessment.syllables.map((syllable) => syllable.status);
+  });
+
+  /** Border accent for the card: the worse of the two verdicts. */
+  feedbackAccent = $derived.by((): FeedbackAccent => {
+    const rank: Record<FeedbackAccent, number> = { off: 3, near: 2, unknown: 1, match: 0 };
+    const values = [this.wordVerdict?.status, this.toneVerdict?.status].filter(Boolean) as FeedbackAccent[];
+    if (!values.length) return 'unknown';
+    return values.reduce((worst, next) => (rank[next] > rank[worst] ? next : worst));
+  });
 
   /** Load the native reference contours once, best-effort. Missing data just
    * turns off the reference comparison; tone capture still works. */
