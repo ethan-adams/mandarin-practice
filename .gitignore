@@ -7,3 +7,6 @@ dist/
 public/hanzi/
 .env
 .env.local
+
+# Visual-review screenshots (regenerate with npm run shots)
+docs/shots/

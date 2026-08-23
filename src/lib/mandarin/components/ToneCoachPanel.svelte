@@ -52,7 +52,7 @@
     <small class="idle">{toneCoach.toneError || toneCoach.recognitionError}</small>
   {:else}
     <small class="idle">
-      {answerRevealed ? 'Tap Speak to check your word and tone against the native audio.' : 'Tap Speak and say the answer — you’ll see how close your word and tone landed.'}
+      {answerRevealed ? 'Tap Speak to check your word and tone against the native audio.' : 'Tap Speak and say the answer to see how close your word and tone landed.'}
     </small>
   {/if}
 </div>
@@ -74,10 +74,10 @@
     border-left-color: #2f7d52;
   }
   .verdict-card[data-status='near'] {
-    border-left-color: var(--mandarin-gold);
+    border-left-color: var(--accent-gold);
   }
   .verdict-card[data-status='off'] {
-    border-left-color: var(--mandarin-red-dark);
+    border-left-color: var(--mandarin-red);
   }
 
   .line {
@@ -105,7 +105,7 @@
     color: #2f7d52;
   }
   .line[data-status='near'] .key {
-    color: color-mix(in srgb, var(--mandarin-gold) 80%, var(--text-secondary));
+    color: color-mix(in srgb, var(--accent-gold) 80%, var(--text-secondary));
   }
   .line[data-status='off'] .key {
     color: var(--mandarin-red);
@@ -132,10 +132,10 @@
     background: #2f7d52;
   }
   .dots span[data-status='close'] {
-    background: var(--mandarin-gold);
+    background: var(--accent-gold);
   }
   .dots span[data-status='missed'] {
-    background: var(--mandarin-red-dark);
+    background: var(--mandarin-red);
   }
 
   .hedge {
@@ -173,14 +173,14 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: var(--mandarin-blue);
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--mandarin-blue) 55%, transparent);
+    background: var(--accent-primary);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-primary) 55%, transparent);
     animation: pulse 1.4s ease-out infinite;
   }
 
   @keyframes pulse {
     0% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--mandarin-blue) 55%, transparent);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-primary) 55%, transparent);
     }
     70% {
       box-shadow: 0 0 0 9px transparent;

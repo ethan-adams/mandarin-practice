@@ -64,7 +64,7 @@ export function deriveAutoRating(
       return {
         rating: 'hard',
         headline: 'Check the word',
-        detail: 'Your tone matched, but the read-back was unsure — hear it and compare.',
+        detail: 'Your tone matched, but the read-back was unsure. Hear it and compare.',
       };
     }
     return {

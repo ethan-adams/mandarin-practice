@@ -311,22 +311,22 @@ export class ToneCoachController {
     const expectedLabel = card ? `${expected} (${pinyinText(card.pinyin)})` : expected;
     const heard = (result.transcript ?? '').trim();
     if (result.status === 'no_speech' || !heard) {
-      return { status: 'unknown', line: 'Did not catch any speech — tap Speak and say it once more.' };
+      return { status: 'unknown', line: 'Did not catch any speech. Tap Speak and say it once more.' };
     }
     if (result.status === 'matched') {
-      return { status: 'match', line: `Heard “${heard}” — that is the word.` };
+      return { status: 'match', line: `Heard “${heard}”. That is the word.` };
     }
     if (result.status === 'close') {
-      return { status: 'near', line: `Heard “${heard}” — nearly ${expectedLabel}.` };
+      return { status: 'near', line: `Heard “${heard}”. Nearly ${expectedLabel}.` };
     }
     const expectedUnits = [...expected].filter((ch) => /\p{Script=Han}/u.test(ch)).length;
     if (expectedUnits <= 1) {
       return {
         status: 'unknown',
-        line: `Heard “${heard}”. Read-back is unreliable on a single syllable, so trust your ear — hear ${expectedLabel} and compare.`,
+        line: `Heard “${heard}”. Read-back is unreliable on a single syllable, so trust your ear: hear ${expectedLabel} and compare.`,
       };
     }
-    return { status: 'off', line: `Heard “${heard}” — that is not ${expectedLabel}. Hear it and try again.` };
+    return { status: 'off', line: `Heard “${heard}”. That is not ${expectedLabel}. Hear it and try again.` };
   });
 
   /** How your tone landed, named as a shape you can act on (and, when the app
@@ -343,21 +343,21 @@ export class ToneCoachController {
       const want = toneShape(syllable.tone!);
       const got = observedShapeWord(syllable.observed);
       if (syllable.status === 'matched') {
-        return { status: 'match', line: `On target — ${syllable.text} is a ${want.name} tone, and your pitch matched.` };
+        return { status: 'match', line: `On target. ${syllable.text} is a ${want.name} tone, and your pitch matched.` };
       }
       if (syllable.status === 'close') {
-        return { status: 'near', line: `Close — you said it ${got}; ${syllable.text} should be ${want.name} (${want.hint}).` };
+        return { status: 'near', line: `Close. You said it ${got}; ${syllable.text} should be ${want.name}, so ${want.hint}.` };
       }
-      return { status: 'off', line: `You said it ${got} — ${syllable.text} is a ${want.name} tone, so ${want.hint}.` };
+      return { status: 'off', line: `You said it ${got}. ${syllable.text} is a ${want.name} tone, so ${want.hint}.` };
     }
 
     const status: FeedbackAccent = overall === 'matched' ? 'match' : overall === 'close' ? 'near' : 'off';
     const line =
       status === 'match'
-        ? 'On target — your pitch tracked the native melody.'
+        ? 'On target. Your pitch tracked the native melody.'
         : status === 'near'
-          ? 'Close — follow the native melody a little tighter, syllable by syllable.'
-          : 'Off — replay the native audio and match each syllable’s rise and fall.';
+          ? 'Close. Follow the native melody a little tighter, syllable by syllable.'
+          : 'Off. Replay the native audio and match each syllable’s rise and fall.';
     return { status, line };
   });
 
