@@ -81,26 +81,56 @@ export class AccountController {
     this.message = '';
   }
 
-  async syncNow(): Promise<void> {
+  /**
+   * Reconcile local progress with the account. Pass quiet=true for background
+   * saves (after rating cards, on tab hide) so the status line doesn't flicker;
+   * the visible sync from load/sign-in/"Save now" stays loud.
+   */
+  async syncNow(quiet = false): Promise<void> {
     if (!this.available || !this.#token) return;
-    this.status = 'working';
-    this.message = '';
+    if (!quiet) {
+      this.status = 'working';
+      this.message = '';
+    }
     try {
       const { changedLocal } = await syncProgress(this.#token, localStorage);
       if (changedLocal) this.#onApplied();
       this.status = 'ok';
       this.lastSyncedAt = new Date().toISOString();
       localStorage.setItem(LAST_KEY, this.lastSyncedAt);
-      this.message = 'Progress saved to your account.';
+      if (!quiet) this.message = 'Progress saved to your account.';
     } catch (err) {
       if (err instanceof AuthExpiredError) {
         this.signOut();
         this.status = 'error';
-        this.message = 'Your session expired — sign in again to keep saving.';
+        this.message = 'Your session expired. Sign in again to keep saving.';
         return;
       }
       this.status = 'offline';
-      this.message = 'Saved on this device. Couldn’t reach your account — will retry next time.';
+      if (!quiet) this.message = 'Saved on this device. Could not reach your account; will retry next time.';
     }
+  }
+
+  #syncTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Debounced background save after activity, so a burst of ratings collapses
+   *  into one request a few seconds after the learner stops. */
+  scheduleSync(): void {
+    if (!this.available || !this.#token) return;
+    if (this.#syncTimer) clearTimeout(this.#syncTimer);
+    this.#syncTimer = setTimeout(() => {
+      this.#syncTimer = null;
+      void this.syncNow(true);
+    }, 4000);
+  }
+
+  /** Flush a pending save immediately (tab hidden / closing) so a session isn't
+   *  lost when the learner leaves before the debounce fires. */
+  flush(): void {
+    if (this.#syncTimer) {
+      clearTimeout(this.#syncTimer);
+      this.#syncTimer = null;
+    }
+    void this.syncNow(true);
   }
 }

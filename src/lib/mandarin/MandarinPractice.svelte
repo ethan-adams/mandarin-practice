@@ -52,7 +52,13 @@
     if (!session.currentCard) return;
     evidence.record(toneCoach.characterFeedback, toneCoach.recognitionResult, rating);
     session.rate(rating);
+    // Push this progress up to the account (debounced) so a session isn't
+    // stranded on one device. The old flow only synced on load/sign-in.
+    account.scheduleSync();
   }
+
+  // What to tell the learner about where their progress lives, honestly.
+  let historyNote = $derived(account.signedIn ? 'Synced to your account.' : 'Review history stays in this browser.');
 
   function setMode(mode: Mode) {
     session.setMode(mode);
@@ -146,7 +152,16 @@
     void session.loadCorpus();
     session.syncCardFromPath();
 
+    // Leaving the tab (closing, backgrounding on mobile) is the moment a session
+    // would otherwise be lost before the debounce fires, so flush the save then.
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') account.flush();
+    };
+    document.addEventListener('visibilitychange', onHide);
+
     return () => {
+      document.removeEventListener('visibilitychange', onHide);
+      account.flush();
       toneCoach.stopRecognition();
       toneCoach.stopToneAssessment(false);
       speech.dispose();
@@ -211,8 +226,8 @@
       onResetProgress={() => session.resetDemo()}
       onClearEvidence={() => evidence.clear()}
       infoLine={session.corpusLoaded
-        ? `${session.corpusLessonCount} lessons loaded. Review history stays in this browser.`
-        : 'Demo fallback loaded. Review history stays in this browser.'}
+        ? `${session.corpusLessonCount} lessons loaded. ${historyNote}`
+        : `Demo fallback loaded. ${historyNote}`}
     />
   {:else}
     <div class="practice-layout">
@@ -253,7 +268,7 @@
   {/if}
 
   <footer class="practice-footer">
-    <p>{session.corpusLoaded ? `${session.corpusLessonCount} lessons loaded. Review history stays in this browser.` : 'Demo fallback loaded. Review history stays in this browser.'}</p>
+    <p>{session.corpusLoaded ? `${session.corpusLessonCount} lessons loaded. ${historyNote}` : `Demo fallback loaded. ${historyNote}`}</p>
     <button class="you-link" onclick={() => session.showYou()}>Account &amp; settings →</button>
   </footer>
 </section>
