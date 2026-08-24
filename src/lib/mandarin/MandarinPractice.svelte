@@ -19,7 +19,12 @@
   import You from './components/You.svelte';
 
   const settings = new PracticeSettings();
-  const session = new PracticeSession(() => toneCoach.reset());
+  // Return types are annotated so these forward references to `toneCoach`
+  // (declared just below) don't create a circular type-inference cycle.
+  const session = new PracticeSession(
+    (): void => toneCoach.reset(),
+    (): boolean => toneCoach.toneAssessmentActive,
+  );
   const toneCoach = new ToneCoachController(
     () => session.currentCard ?? null,
     () => session.showAnswer,

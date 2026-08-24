@@ -97,9 +97,11 @@ export class PracticeSession {
   });
 
   readonly #onReset: () => void;
+  readonly #isBusy: () => boolean;
 
-  constructor(onReset: () => void) {
+  constructor(onReset: () => void, isBusy: () => boolean = () => false) {
     this.#onReset = onReset;
+    this.#isBusy = isBusy;
   }
 
   loadState() {
@@ -358,6 +360,14 @@ export class PracticeSession {
       return;
     } finally {
       this.corpusLoading = false;
+    }
+
+    // Don't swap the deck out from under an in-progress spoken attempt: the swap
+    // fires #onReset (below), which would wipe the learner's live recording.
+    // Wait for the capture to finish, bounded so a stuck mic never blocks the
+    // real corpus for long.
+    for (let waited = 0; this.#isBusy() && waited < 10000; waited += 250) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
     }
 
     const previousCardId = this.currentCard?.id ?? null;
