@@ -15,19 +15,23 @@ export type AutoVerdict = {
 };
 
 export function deriveAutoRating(
-  _tone: ContourComparison | null,
+  tone: ContourComparison | null,
   word: (PronunciationResult & { transcript?: string }) | null,
 ): AutoVerdict | null {
-  // Scheduling is driven by the WORD, not the tone. The in-browser tone detector
-  // is unvalidated — it octave-errors and reads most tones as falling — so letting
-  // it move the review calendar corrupted scheduling while the UI hedged it as
-  // "not a grade". Tone stays on-screen guidance only until it is validated
-  // (planned server-side). With no trustworthy word signal, the learner rates by
-  // ear via the manual fallback.
+  // The WORD drives scheduling; tone only refines it, and only when `tone` is the
+  // trustworthy signal (the server's clean-F0 contour vs. the native reference —
+  // the caller passes null for the in-browser detector, which octave-errors). A
+  // bad or missing tone read NEVER fails a card and never overrides the word. With
+  // no trustworthy word signal, the learner rates by ear via the manual fallback.
   const wordSpoke = !!word && word.status !== 'no_speech';
   if (!wordSpoke) return null;
 
   if (word!.status === 'matched') {
+    // Right word, but a confidently-wrong tone earns another look — the one way
+    // tone touches the calendar, and only ever a gentle demotion.
+    if (tone?.status === 'missed') {
+      return { rating: 'hard', headline: 'Right word, tone off', detail: 'The word landed, but the tone drifted from the native audio. Give it another pass.' };
+    }
     return { rating: 'correct', headline: 'Right word', detail: 'That matched. Keep an ear on the tone above.' };
   }
   if (word!.status === 'close') {

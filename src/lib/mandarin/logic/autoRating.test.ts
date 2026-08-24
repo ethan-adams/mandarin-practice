@@ -16,19 +16,29 @@ const word = (status: PronunciationResult['status'], expected = '好'): Pronunci
   similarity: status === 'missed' ? 0.2 : 0.95,
 });
 
-describe('deriveAutoRating (word drives scheduling; tone is guidance only)', () => {
+describe('deriveAutoRating (word drives scheduling; server tone refines it)', () => {
   it('returns null when there is no trustworthy word signal (fallback path)', () => {
     expect(deriveAutoRating(null, null)).toBeNull();
     expect(deriveAutoRating(null, word('no_speech'))).toBeNull();
-    // Tone-only attempt: the unvalidated pitch detector must not grade the card.
+    // Tone-only attempt: tone alone must not grade the card.
     expect(deriveAutoRating(tone('matched'), null)).toBeNull();
     expect(deriveAutoRating(tone('close'), null)).toBeNull();
   });
 
-  it('correct when the word matches — the (untrusted) tone never downgrades it', () => {
+  it('correct when the word matches and tone is fine, absent, or only close', () => {
     expect(deriveAutoRating(tone('matched'), word('matched'))?.rating).toBe('correct');
-    expect(deriveAutoRating(tone('missed'), word('matched'))?.rating).toBe('correct');
+    expect(deriveAutoRating(tone('close'), word('matched'))?.rating).toBe('correct');
+    // No trustworthy tone signal (in-browser detector -> caller passes null):
+    // the word alone still gives full credit.
     expect(deriveAutoRating(null, word('matched'))?.rating).toBe('correct');
+  });
+
+  it('right word but a confidently-wrong (server) tone earns a gentle "hard", never a fail', () => {
+    const verdict = deriveAutoRating(tone('missed'), word('matched'))!;
+    expect(verdict.rating).toBe('hard');
+    expect(verdict.headline.toLowerCase()).toContain('tone');
+    // Tone can only demote a correct word one notch; it can never fail it.
+    expect(verdict.rating).not.toBe('wrong');
   });
 
   it('a close-but-not-exact word caps at "hard" and never claims full credit', () => {

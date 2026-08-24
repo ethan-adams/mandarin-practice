@@ -39,7 +39,7 @@
   // The app judges you: derive the schedule from how you actually did (tone
   // contour + word recognition). Null when you didn't speak — then we fall back
   // to a quiet "knew it / show me again".
-  let auto = $derived(deriveAutoRating(toneCoach.nativeMatch, toneCoach.recognitionResult));
+  let auto = $derived(deriveAutoRating(toneCoach.schedulingTone, toneCoach.recognitionResult));
 
   // The writing panel is opt-in per card; collapse it whenever the card changes.
   let showWriting = $state(false);

@@ -38,7 +38,7 @@ import {
   contourFromFrames,
   type ContourComparison,
 } from '../../utils/mandarinToneReference';
-import { transcribeClip, transcriptionAvailable } from '../../utils/mandarinTranscribe';
+import { transcribeClip, transcriptionAvailable, type ServerTone } from '../../utils/mandarinTranscribe';
 import { bestSpokenResult, compareBySound, ensurePinyinLookup } from '../../utils/mandarinSound';
 import { characterUnits, pinyinText, type CharacterUnit } from '../logic/pinyin';
 import type { Card } from '../logic/deck';
@@ -133,6 +133,13 @@ export class ToneCoachController {
   /** How the learner's last take compared to the native reference clip. */
   nativeMatch = $state<ContourComparison | null>(null);
   nativeSyllables = $state<ContourComparison[]>([]);
+  /** True when `nativeMatch` was built from the SERVER's clean F0 contour (the
+   *  trustworthy path) rather than the in-browser pitch detector. Only a
+   *  server-sourced match is un-hedged and allowed to touch scheduling. */
+  nativeFromServer = $state(false);
+  /** The raw server tone payload (per-syllable verdict + contour), when the
+   *  practice server assessed the last take. */
+  serverTone = $state<ServerTone | null>(null);
   /** Opt-in word recognition (in-browser Whisper): checks you said the right
    * word, not just the right tone. */
   wordCheckEnabled = $state(false);
@@ -349,6 +356,13 @@ export class ToneCoachController {
   /** How your tone landed, named as a shape you can act on (and, when the app
    *  can tell, which tone you actually produced). Always hedged as an estimate. */
   toneVerdict = $derived.by((): SpokenVerdict | null => {
+    // The server's clean F0 contour vs. the native reference is the trustworthy
+    // signal — prefer it and ignore the in-browser detector's take entirely when
+    // it's present (the browser F0 octave-errors).
+    if (this.nativeFromServer && this.nativeMatch) {
+      return this.#nativeToneLine(this.nativeMatch.status);
+    }
+
     const assessment = this.toneAssessment;
     const hasVerdict = assessment ? toneAssessmentHasVerdict(assessment) : false;
     const overall: ToneStatus | null = hasVerdict ? assessment!.status : (this.nativeMatch?.status ?? null);
@@ -368,23 +382,48 @@ export class ToneCoachController {
       return { status: 'off', line: `You said it ${got}. ${syllable.text} is a ${want.name} tone, so ${want.hint}.` };
     }
 
-    const status: FeedbackAccent = overall === 'matched' ? 'match' : overall === 'close' ? 'near' : 'off';
-    const line =
-      status === 'match'
-        ? 'On target. Your pitch tracked the native melody.'
-        : status === 'near'
-          ? 'Close. Follow the native melody a little tighter, syllable by syllable.'
-          : 'Off. Replay the native audio and match each syllable’s rise and fall.';
-    return { status, line };
+    return this.#nativeToneLine(overall);
   });
 
+  /** Plain verdict from a contour-vs-native comparison, naming the tone shape
+   *  when there's a single graded syllable to point at. */
+  #nativeToneLine(status: ToneStatus): SpokenVerdict {
+    const card = this.#getCard();
+    const graded = card ? expectedToneSyllables(card.pinyin).filter((s) => s.tone && s.tone !== 5) : [];
+    if (status === 'matched') {
+      const one = graded.length === 1 ? ` ${graded[0].text} is a ${toneShape(graded[0].tone!).name} tone, and you matched it.` : ' Your pitch tracked the native melody.';
+      return { status: 'match', line: `On target.${one}` };
+    }
+    if (status === 'close') {
+      return { status: 'near', line: 'Close. Follow the native melody a little tighter, syllable by syllable.' };
+    }
+    if (graded.length === 1) {
+      const want = toneShape(graded[0].tone!);
+      return { status: 'off', line: `Off. ${graded[0].text} is a ${want.name} tone, so ${want.hint}. Replay the native audio and match it.` };
+    }
+    return { status: 'off', line: 'Off. Replay the native audio and match each syllable’s rise and fall.' };
+  }
+
   /** Per-syllable tone dots for multi-syllable answers (empty for one syllable,
-   *  where the tone line already names the shape). */
+   *  where the tone line already names the shape). Prefer the server-sourced
+   *  per-syllable native comparison; fall back to the in-browser assessment. */
   toneDots = $derived.by((): ToneSyllableStatus[] => {
+    if (this.nativeFromServer && this.nativeSyllables.length > 1) {
+      return this.nativeSyllables.map((cmp) => cmp.status);
+    }
     const assessment = this.toneAssessment;
     if (!assessment || !toneAssessmentHasVerdict(assessment) || assessment.syllables.length <= 1) return [];
     return assessment.syllables.map((syllable) => syllable.status);
   });
+
+  /** The tone signal permitted to influence scheduling: ONLY the server-sourced
+   *  contour match. The in-browser detector never touches the calendar. */
+  schedulingTone = $derived<ContourComparison | null>(this.nativeFromServer ? this.nativeMatch : null);
+
+  /** True when the tone verdict on screen is the in-browser estimate (unvalidated
+   *  pitch detector), so the UI can hedge it. A server-sourced verdict (contour
+   *  vs. native audio) is trustworthy and shown plainly. */
+  toneIsEstimate = $derived(!this.nativeFromServer && this.toneVerdict !== null);
 
   /** Border accent for the card: the worse of the two verdicts. */
   feedbackAccent = $derived.by((): FeedbackAccent => {
@@ -455,7 +494,9 @@ export class ToneCoachController {
     this.whisperState = 'transcribing';
     this.whisperDetail = 'Reading back what you said…';
     try {
-      const transcript = await transcribeClip(blob);
+      const startCard = this.#getCard();
+      const expectedTones = startCard ? this.#expectedToneNumbers(startCard) : [];
+      const { text, tone } = await transcribeClip(blob, expectedTones);
       const card = this.#getCard();
       // Transcription is slow; a card change invalidates this result.
       if (!card || card.id !== cardId) {
@@ -463,13 +504,41 @@ export class ToneCoachController {
         this.whisperDetail = '';
         return;
       }
-      this.recognitionResult = this.#spokenResult(card, transcript, 1);
+      this.recognitionResult = this.#spokenResult(card, text, 1);
+      this.#applyServerTone(card, tone);
       this.whisperState = 'ready';
       this.whisperDetail = '';
     } catch {
       this.whisperState = 'error';
       this.whisperDetail = 'Could not transcribe that take — the tone feedback above still holds.';
     }
+  }
+
+  /** The card's expected tone sequence (1-4, 5=neutral) for the server tone
+   *  check. Derived from the same pinyin parser the UI uses. */
+  #expectedToneNumbers(card: Card): number[] {
+    return expectedToneSyllables(card.pinyin).map((s) => s.tone ?? 5);
+  }
+
+  /** Fold the server's clean-F0 tone result into the reference comparison. The
+   *  learner contour comes from the server (octave-error-free), so the resulting
+   *  match is the trustworthy signal — it replaces the in-browser one and is the
+   *  only tone allowed to touch scheduling. */
+  #applyServerTone(card: Card, tone: ServerTone | null) {
+    this.serverTone = tone;
+    const reference = this.#referenceContour(card);
+    if (!tone || tone.contour.length < 2 || !reference) {
+      this.nativeFromServer = false;
+      return;
+    }
+    const match = compareContours(tone.contour, reference);
+    if (!match) {
+      this.nativeFromServer = false;
+      return;
+    }
+    this.nativeMatch = match;
+    this.nativeSyllables = compareBySyllable(tone.contour, reference, expectedToneSyllables(card.pinyin).length);
+    this.nativeFromServer = true;
   }
 
   #recognitionConstructor(): SpeechRecognitionConstructor | null {
@@ -508,6 +577,8 @@ export class ToneCoachController {
     this.liveSyllableIndex = 0;
     this.nativeMatch = null;
     this.nativeSyllables = [];
+    this.nativeFromServer = false;
+    this.serverTone = null;
   }
 
   #startTextRecognition() {

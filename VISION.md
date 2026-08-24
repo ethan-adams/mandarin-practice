@@ -126,15 +126,24 @@ Svelte app ──┬─→ mandarin-api on Lightsail  (content, accounts, progre
 
 ## Pronunciation
 
-- **Tone contour vs. native reference (always on, client-side).** Each prebuilt
-  reference clip's pitch contour ships with the card (`public/mandarin-contours.json`,
-  scored in `mandarinToneReference.ts`). At runtime the app records the mic,
-  extracts the learner's contour in-browser, aligns per syllable, and scores tone
-  shape. Works in every browser, no upload, no download. Feedback stays honest and
-  hedged — guidance, not a grade; self-rating stays primary.
-- **Word recognition (server-side).** `POST /v1/transcribe` on mandarin-api runs
-  faster-whisper over the uploaded clip; the existing `comparePronunciation`
-  alignment marks the characters. Replaces the on-device Whisper path entirely.
+- **Tone: server-side F0 vs. native reference (real, 2026-08-23).** The learner's
+  clip goes to `POST /v1/transcribe` with the card's expected tones; the server
+  runs a pure-NumPy **YIN** F0 tracker (`server/app/tone_engine.py`) — octave-error
+  robust, unlike the old in-browser autocorrelation — and returns the learner's
+  24-point pitch contour. The client correlates that against the native reference
+  contour (`public/mandarin-contours.json`, `mandarinToneReference.ts`); comparing
+  learner-to-native cancels the isolated-syllable prosody that defeats absolute
+  tone-shape rules. Validated on TTS voices: correct pronunciations land
+  matched/close, wrong tones near zero correlation. This is trustworthy enough to
+  show plainly (no "in-browser estimate" hedge) and to **gently** touch scheduling:
+  a right word with a confidently-wrong tone demotes correct→hard, but tone never
+  fails a card and never overrides the word. The in-browser detector is kept ONLY
+  for the live "listening" animation and as a hedged offline fallback; it never
+  grades. *Honest caveat:* validation is on synthetic voices (no human-mic corpus
+  yet); contour shape is speaker-independent by design, so it should transfer.
+- **Word recognition (server-side).** The same `POST /v1/transcribe` pass runs
+  faster-whisper over the clip; `comparePronunciation` / `compareBySound` mark the
+  characters (homophones count). One request, one model run, returns text + tone.
 
 ## Later threads
 

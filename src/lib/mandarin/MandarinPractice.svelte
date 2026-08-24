@@ -128,7 +128,7 @@
       // Answer already revealed: Enter/Space advances the judged card (the
       // "Next" action). When there was no spoken attempt the app can't judge,
       // so the learner still picks "knew it / show me again" explicitly.
-      const auto = deriveAutoRating(toneCoach.nativeMatch, toneCoach.recognitionResult);
+      const auto = deriveAutoRating(toneCoach.schedulingTone, toneCoach.recognitionResult);
       if (auto) rate(auto.rating);
       return;
     }

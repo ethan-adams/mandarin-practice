@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { TONE_FEEDBACK_EXPERIMENTAL } from '../../utils/mandarinToneAssessment';
   import type { ToneCoachController } from '../state/toneCoach.svelte';
 
   let {
@@ -41,7 +40,7 @@
           {/each}
         </div>
       {/if}
-      {#if TONE_FEEDBACK_EXPERIMENTAL}
+      {#if toneCoach.toneIsEstimate}
         <small class="hedge">Tone read is an in-browser estimate, not a grade.</small>
       {/if}
     {/if}
