@@ -133,14 +133,16 @@ Svelte app ──┬─→ mandarin-api on Lightsail  (content, accounts, progre
   24-point pitch contour. The client correlates that against the native reference
   contour (`public/mandarin-contours.json`, `mandarinToneReference.ts`); comparing
   learner-to-native cancels the isolated-syllable prosody that defeats absolute
-  tone-shape rules. Validated on TTS voices: correct pronunciations land
-  matched/close, wrong tones near zero correlation. This is trustworthy enough to
-  show plainly (no "in-browser estimate" hedge) and to **gently** touch scheduling:
-  a right word with a confidently-wrong tone demotes correct→hard, but tone never
-  fails a card and never overrides the word. The in-browser detector is kept ONLY
-  for the live "listening" animation and as a hedged offline fallback; it never
-  grades. *Honest caveat:* validation is on synthetic voices (no human-mic corpus
-  yet); contour shape is speaker-independent by design, so it should transfer.
+  tone-shape rules. An automated core-loop audit (`scripts/core-loop-audit.mjs`,
+  drives the live app with synthesized speech) set the honest boundary: the word
+  check is reliable both ways (10/10 correct recognized, 10/10 wrong rejected), and
+  tone reliably flags a *wrong* tone, but tone still scores a *correct* take "off"
+  ~20% of the time across voices. So **the word drives scheduling; tone never
+  grades.** Tone is shown as rich on-screen guidance, framed honestly as an
+  approximate match to the native audio (a single syllable in isolation, the least
+  reliable case, is never called a hard "off"). The in-browser detector is kept
+  ONLY for the live "listening" animation. *Caveat:* validated on synthetic voices
+  (no human-mic corpus yet); the human-mic run is still `docs/CORE-LOOP-TEST.md`.
 - **Word recognition (server-side).** The same `POST /v1/transcribe` pass runs
   faster-whisper over the clip; `comparePronunciation` / `compareBySound` mark the
   characters (homophones count). One request, one model run, returns text + tone.

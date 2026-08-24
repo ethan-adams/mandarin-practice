@@ -16,7 +16,7 @@ const word = (status: PronunciationResult['status'], expected = '好'): Pronunci
   similarity: status === 'missed' ? 0.2 : 0.95,
 });
 
-describe('deriveAutoRating (word drives scheduling; server tone refines it)', () => {
+describe('deriveAutoRating (word drives scheduling; tone is guidance only)', () => {
   it('returns null when there is no trustworthy word signal (fallback path)', () => {
     expect(deriveAutoRating(null, null)).toBeNull();
     expect(deriveAutoRating(null, word('no_speech'))).toBeNull();
@@ -25,20 +25,14 @@ describe('deriveAutoRating (word drives scheduling; server tone refines it)', ()
     expect(deriveAutoRating(tone('close'), null)).toBeNull();
   });
 
-  it('correct when the word matches and tone is fine, absent, or only close', () => {
+  it('correct when the word matches — tone never changes the rating', () => {
+    // The core-loop audit found tone scores a correct pronunciation "off" ~20%
+    // of the time, so it must not demote a correct word. Every tone status keeps
+    // a matched word at "correct".
     expect(deriveAutoRating(tone('matched'), word('matched'))?.rating).toBe('correct');
     expect(deriveAutoRating(tone('close'), word('matched'))?.rating).toBe('correct');
-    // No trustworthy tone signal (in-browser detector -> caller passes null):
-    // the word alone still gives full credit.
+    expect(deriveAutoRating(tone('missed'), word('matched'))?.rating).toBe('correct');
     expect(deriveAutoRating(null, word('matched'))?.rating).toBe('correct');
-  });
-
-  it('right word but a confidently-wrong (server) tone earns a gentle "hard", never a fail', () => {
-    const verdict = deriveAutoRating(tone('missed'), word('matched'))!;
-    expect(verdict.rating).toBe('hard');
-    expect(verdict.headline.toLowerCase()).toContain('tone');
-    // Tone can only demote a correct word one notch; it can never fail it.
-    expect(verdict.rating).not.toBe('wrong');
   });
 
   it('a close-but-not-exact word caps at "hard" and never claims full credit', () => {

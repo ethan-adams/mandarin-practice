@@ -40,8 +40,8 @@
           {/each}
         </div>
       {/if}
-      {#if toneCoach.toneIsEstimate}
-        <small class="hedge">Tone read is an in-browser estimate, not a grade.</small>
+      {#if toneCoach.toneNote}
+        <small class="hedge">{toneCoach.toneNote}</small>
       {/if}
     {/if}
     {#if !toneCoach.wordAvailable}

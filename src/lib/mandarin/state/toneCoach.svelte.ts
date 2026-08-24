@@ -386,7 +386,10 @@ export class ToneCoachController {
   });
 
   /** Plain verdict from a contour-vs-native comparison, naming the tone shape
-   *  when there's a single graded syllable to point at. */
+   *  when there's a single graded syllable to point at. A single syllable in
+   *  isolation is the least reliable tone case (the audit's false "off"s were all
+   *  single-syllable or cross-voice), so it is never graded a hard "off" — the
+   *  worst it says is a gentle "follow the melody". */
   #nativeToneLine(status: ToneStatus): SpokenVerdict {
     const card = this.#getCard();
     const graded = card ? expectedToneSyllables(card.pinyin).filter((s) => s.tone && s.tone !== 5) : [];
@@ -394,12 +397,12 @@ export class ToneCoachController {
       const one = graded.length === 1 ? ` ${graded[0].text} is a ${toneShape(graded[0].tone!).name} tone, and you matched it.` : ' Your pitch tracked the native melody.';
       return { status: 'match', line: `On target.${one}` };
     }
-    if (status === 'close') {
-      return { status: 'near', line: 'Close. Follow the native melody a little tighter, syllable by syllable.' };
-    }
     if (graded.length === 1) {
       const want = toneShape(graded[0].tone!);
-      return { status: 'off', line: `Off. ${graded[0].text} is a ${want.name} tone, so ${want.hint}. Replay the native audio and match it.` };
+      return { status: 'near', line: `${graded[0].text} is a ${want.name} tone, so ${want.hint}. Replay the native audio and match it.` };
+    }
+    if (status === 'close') {
+      return { status: 'near', line: 'Close. Follow the native melody a little tighter, syllable by syllable.' };
     }
     return { status: 'off', line: 'Off. Replay the native audio and match each syllable’s rise and fall.' };
   }
@@ -421,9 +424,18 @@ export class ToneCoachController {
   schedulingTone = $derived<ContourComparison | null>(this.nativeFromServer ? this.nativeMatch : null);
 
   /** True when the tone verdict on screen is the in-browser estimate (unvalidated
-   *  pitch detector), so the UI can hedge it. A server-sourced verdict (contour
-   *  vs. native audio) is trustworthy and shown plainly. */
+   *  pitch detector). Kept for callers that only care about the browser fallback. */
   toneIsEstimate = $derived(!this.nativeFromServer && this.toneVerdict !== null);
+
+  /** An honest one-line caveat for the tone verdict, tailored to its source.
+   *  Even the server tone is approximate (the audit found ~20% false "off" on a
+   *  correct take), so it is guidance, never a grade. Null when no tone verdict. */
+  toneNote = $derived.by((): string | null => {
+    if (this.toneVerdict === null) return null;
+    return this.nativeFromServer
+      ? 'Tone is an approximate match to the native audio, not a grade — trust your ear too.'
+      : 'Tone read is an in-browser estimate, not a grade.';
+  });
 
   /** Border accent for the card: the worse of the two verdicts. */
   feedbackAccent = $derived.by((): FeedbackAccent => {
