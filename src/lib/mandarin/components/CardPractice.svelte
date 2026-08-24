@@ -2,6 +2,8 @@
   import { lessonLabel } from '../logic/lessons';
   import { pinyinParts, pinyinText } from '../logic/pinyin';
   import { deriveAutoRating } from '../logic/autoRating';
+  import { splitAroundWord } from '../logic/mandarinExamples';
+  import { exampleStore } from '../logic/mandarinExamples.svelte';
   import type { Rating } from '../logic/srs';
   import type { PracticeSession } from '../state/session.svelte';
   import type { PracticeSettings } from '../state/settings.svelte';
@@ -40,6 +42,10 @@
   // contour + word recognition). Null when you didn't speak — then we fall back
   // to a quiet "knew it / show me again".
   let auto = $derived(deriveAutoRating(toneCoach.schedulingTone, toneCoach.recognitionResult));
+
+  // Real native example sentences for the card's word (Tatoeba, CC BY 2.0).
+  exampleStore.load();
+  let examples = $derived(exampleStore.for(currentCard?.answerZh ?? ''));
 
   // The writing panel is opt-in per card; collapse it whenever the card changes.
   let showWriting = $state(false);
@@ -113,6 +119,21 @@
       {/if}
 
       {#if currentCard.notes}<small class="note">{currentCard.notes}</small>{/if}
+
+      {#if examples.length}
+        <div class="examples">
+          <span class="examples-label">In context</span>
+          {#each examples as ex}
+            <div class="example">
+              <p class="example-zh" lang="zh-Hans">
+                {#each splitAroundWord(ex.zh, currentCard.answerZh) as part}<span class:hit={part.hit}>{part.text}</span>{/each}
+              </p>
+              <p class="example-en">{ex.en}</p>
+            </div>
+          {/each}
+          <small class="examples-credit">Sentences from Tatoeba (CC BY 2.0)</small>
+        </div>
+      {/if}
 
       <div class="writing-toggle">
         <button type="button" class="trace-step" onclick={() => (showWriting = !showWriting)} aria-expanded={showWriting}>
@@ -341,6 +362,57 @@
     color: var(--text-secondary);
     font-size: 16px;
     line-height: 1.45;
+  }
+
+  .examples {
+    max-width: 720px;
+    margin-top: 20px;
+    padding: 14px 16px;
+    border: 1px solid var(--border-primary);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--bg-primary) 70%, var(--bg-secondary));
+  }
+
+  .examples-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .example + .example {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-primary);
+  }
+
+  .example-zh {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 20px;
+    line-height: 1.5;
+  }
+
+  .example-zh .hit {
+    color: var(--accent-primary);
+    font-weight: 700;
+  }
+
+  .example-en {
+    margin: 2px 0 0;
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .examples-credit {
+    display: block;
+    margin-top: 10px;
+    color: var(--text-tertiary);
+    font-size: 11px;
   }
 
   .writing-toggle {
