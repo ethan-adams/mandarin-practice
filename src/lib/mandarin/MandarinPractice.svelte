@@ -60,6 +60,12 @@
   // What to tell the learner about where their progress lives, honestly.
   let historyNote = $derived(account.signedIn ? 'Synced to your account.' : 'Review history stays in this browser.');
 
+  // Point the listening drill at the current deck whenever it's open, so it uses
+  // the real cards and their native audio (and refreshes when the corpus loads).
+  $effect(() => {
+    if (session.practiceView === 'listening') listening.setPool(session.cards);
+  });
+
   function setMode(mode: Mode) {
     session.setMode(mode);
   }
@@ -73,7 +79,8 @@
   );
 
   async function playListeningPrompt() {
-    await speech.playContrastCue(listening.currentCue, {
+    if (!listening.target) return;
+    await speech.playClip(listening.target, {
       onAudioUnavailable: () => listening.markAudioUnavailable(),
     });
   }
@@ -96,18 +103,19 @@
       return;
     }
     if (session.practiceView === 'listening') {
-      if (!listening.round.revealed && event.key.toLowerCase() === 'r') {
+      if (!listening.round) return;
+      const key = event.key.toLowerCase();
+      if (key === 'r') {
         event.preventDefault();
         void playListeningPrompt();
-      } else if (!listening.round.revealed && (event.key === '1' || event.key === '2')) {
+      } else if (!listening.revealed && ['1', '2', '3', '4'].includes(event.key)) {
         event.preventDefault();
-        listening.choose(event.key === '1' ? listening.currentPair.target.id : listening.currentPair.contrast.id);
-      } else if (!listening.round.revealed && event.key === 'Enter') {
+        const card = listening.options[Number(event.key) - 1];
+        if (card) listening.choose(card.id);
+      } else if (listening.revealed && (event.key === 'Enter' || event.key === ' ')) {
         event.preventDefault();
-        listening.reveal();
-      } else if (listening.round.revealed && ['1', '2', '3'].includes(event.key)) {
-        event.preventDefault();
-        listening.rateConfidence(({ '1': 'low', '2': 'medium', '3': 'high' } as const)[event.key as '1' | '2' | '3']);
+        listening.next();
+        void playListeningPrompt();
       }
       return;
     }
@@ -243,7 +251,14 @@
 
       <article class="practice-card">
         {#if session.practiceView === 'listening'}
-          <ListeningPractice {listening} onPlayPrompt={() => void playListeningPrompt()} />
+          <ListeningPractice
+            {listening}
+            onPlayTarget={() => void playListeningPrompt()}
+            onNext={() => {
+              listening.next();
+              void playListeningPrompt();
+            }}
+          />
         {:else if session.practiceView === 'summary'}
           <SessionSummary {session} onKeepGoing={() => session.keepGoing()} onGoHome={() => session.goHome()} />
         {:else if session.currentCard}

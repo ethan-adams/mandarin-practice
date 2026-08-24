@@ -198,7 +198,7 @@ describe('mandarin course home', () => {
     await findCourseHome();
     await fireEvent.click(screen.getByRole('button', { name: /Listening/ }));
 
-    expect(await screen.findByText('Which phrase did you hear?')).toBeInTheDocument();
+    expect(await screen.findByText('Which word did you hear?')).toBeInTheDocument();
   });
 
   it('prefers deck-provided unit metadata when the corpus ships it', async () => {

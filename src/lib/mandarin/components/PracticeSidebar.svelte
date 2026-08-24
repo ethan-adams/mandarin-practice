@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { MANDARIN_CONTRAST_PAIRS } from '../../utils/mandarinContrastPractice';
   import { lessonLabel } from '../logic/lessons';
   import type { PracticeSession, Mode } from '../state/session.svelte';
   import type { PracticeSettings } from '../state/settings.svelte';
@@ -77,9 +76,9 @@
     </div>
   {:else}
     <div class="listening-intro">
-      <span class="lesson-kicker">Listening discrimination</span>
-      <strong>{MANDARIN_CONTRAST_PAIRS.length} fixed contrasts</strong>
-      <small>Local confidence ratings stay separate from card scheduling.</small>
+      <span class="lesson-kicker">Listening</span>
+      <strong>Hear it, pick the word</strong>
+      <small>Native audio from this lesson. Doesn't change your card scheduling.</small>
     </div>
   {/if}
 </aside>

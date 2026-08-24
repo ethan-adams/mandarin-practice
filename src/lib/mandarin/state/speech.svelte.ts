@@ -113,6 +113,19 @@ export class SpeechController {
     return false;
   }
 
+  /** Play a specific card's audio, independent of the current practice card
+   *  (used by listening practice). Prefers the prebuilt native clip, falls back
+   *  to the browser voice, then reports unavailable so the caller degrades
+   *  honestly instead of silently doing nothing. */
+  async playClip(card: Card, options: { onAudioUnavailable?: () => void } = {}): Promise<boolean> {
+    this.#stopCurrent();
+    if (card.audioUrl && (await this.#playUrl(card.audioUrl, () => true))) return true;
+    if (await this.#speakWithBrowserVoice(card.answerZh, '')) return true;
+    this.detail = 'No Chinese browser voice is available, so listening audio is muted. Reveal the answer or continue card practice.';
+    options.onAudioUnavailable?.();
+    return false;
+  }
+
   /** Retry playing the current answer (kept for the sidebar control). */
   retryNeuralSpeech() {
     this.status = 'idle';
