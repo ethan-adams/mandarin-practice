@@ -39,6 +39,7 @@ import {
   type ContourComparison,
 } from '../../utils/mandarinToneReference';
 import { transcribeClip, transcriptionAvailable } from '../../utils/mandarinTranscribe';
+import { bestSpokenResult, compareBySound, ensurePinyinLookup } from '../../utils/mandarinSound';
 import { characterUnits, pinyinText, type CharacterUnit } from '../logic/pinyin';
 import type { Card } from '../logic/deck';
 
@@ -117,7 +118,7 @@ type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
 export class ToneCoachController {
   recognitionActive = $state(false);
-  recognitionResult = $state<(PronunciationResult & { transcript: string; confidence: number }) | null>(null);
+  recognitionResult = $state<(PronunciationResult & { transcript: string; confidence: number; soundMatch?: boolean }) | null>(null);
   recognitionError = $state('');
   microphoneAvailable = $state(false);
   textRecognitionAvailable = $state(false);
@@ -294,6 +295,19 @@ export class ToneCoachController {
     // dev (no API_BASE) quietly falls back to the browser recognizer.
     if (transcriptionAvailable()) void this.enableWordCheck();
     void this.loadContours();
+    // Warm the hanzi->reading map so word-check can score by sound, not just by
+    // character (homophones must count as correct pronunciation).
+    void ensurePinyinLookup();
+  }
+
+  /** Score a transcript against the card by BOTH character and sound, keeping the
+   *  stronger. A homophone the recognizer picked (哎 for 爱) still scores right. */
+  #spokenResult(card: Card, transcript: string, confidence: number) {
+    const { result, soundMatch } = bestSpokenResult(
+      comparePronunciation(card.answerZh, transcript),
+      compareBySound(card.pinyin, transcript),
+    );
+    return { ...result, transcript, confidence, soundMatch };
   }
 
   /** True when either recognizer (server word check or the browser's) can
@@ -314,7 +328,10 @@ export class ToneCoachController {
       return { status: 'unknown', line: 'Did not catch any speech. Tap Speak and say it once more.' };
     }
     if (result.status === 'matched') {
-      return { status: 'match', line: `Heard “${heard}”. That is the word.` };
+      const line = result.soundMatch
+        ? `Heard “${heard}”. Same sounds as ${expectedLabel}. Tone is scored separately below.`
+        : `Heard “${heard}”. That is the word.`;
+      return { status: 'match', line };
     }
     if (result.status === 'close') {
       return { status: 'near', line: `Heard “${heard}”. Nearly ${expectedLabel}.` };
@@ -446,7 +463,7 @@ export class ToneCoachController {
         this.whisperDetail = '';
         return;
       }
-      this.recognitionResult = { ...comparePronunciation(card.answerZh, transcript), transcript, confidence: 1 };
+      this.recognitionResult = this.#spokenResult(card, transcript, 1);
       this.whisperState = 'ready';
       this.whisperDetail = '';
     } catch {
@@ -519,11 +536,7 @@ export class ToneCoachController {
       const liveCard = this.#getCard();
       if (!liveCard || liveCard.id !== card.id) return;
       const { transcript, confidence } = combineRecognitionResults(event.results);
-      this.recognitionResult = {
-        ...comparePronunciation(liveCard.answerZh, transcript),
-        transcript,
-        confidence,
-      };
+      this.recognitionResult = this.#spokenResult(liveCard, transcript, confidence);
     };
     recognizer.onerror = (event) => {
       this.recognitionError = event.error || 'Recognition failed.';
@@ -534,11 +547,7 @@ export class ToneCoachController {
       const liveCard = this.#getCard();
       if (!liveCard || liveCard.id !== card.id) return;
       if (!this.recognitionResult && !this.recognitionError) {
-        this.recognitionResult = {
-          ...comparePronunciation(liveCard.answerZh, ''),
-          transcript: '',
-          confidence: 0,
-        };
+        this.recognitionResult = this.#spokenResult(liveCard, '', 0);
       }
     };
 
