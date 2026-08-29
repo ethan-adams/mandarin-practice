@@ -398,7 +398,12 @@ def _classify_syllable(expected_tone: int, seg_hz: np.ndarray, reference: float,
 
     model = get_tone_model()
     if model is not None:
-        feats = tone_features(seg_hz, reference)
+        # Match training: the model normalizes each syllable to its OWN median
+        # (Tone Perfect clips are single syllables), so serve per-syllable too,
+        # not against the whole-utterance reference.
+        voiced = seg_hz[np.isfinite(seg_hz) & (seg_hz > 0)]
+        own_ref = float(np.median(voiced)) if voiced.size else reference
+        feats = tone_features(seg_hz, own_ref)
         if feats is not None:
             predicted = model.predict(feats)
             observed = TONE_SHAPE_NAME.get(predicted, "level")

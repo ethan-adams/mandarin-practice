@@ -1,0 +1,47 @@
+{
+  "dataset": "Tone Perfect (isolated citation-form syllables, 6 speakers)",
+  "eval": "leave-one-speaker-out (cross-voice generalization)",
+  "model": "MLP(48) on contour features, pure-numpy export",
+  "tone_accuracy_mean": 0.918,
+  "per_speaker": {
+    "FV1": 0.955,
+    "FV2": 0.971,
+    "FV3": 0.948,
+    "MV1": 0.88,
+    "MV2": 0.881,
+    "MV3": 0.876
+  },
+  "per_tone_recall": {
+    "1": 0.981,
+    "2": 0.917,
+    "3": 0.816,
+    "4": 0.959
+  },
+  "confusion_gold_x_pred": [
+    [
+      2414,
+      1,
+      39,
+      6
+    ],
+    [
+      1,
+      2257,
+      196,
+      6
+    ],
+    [
+      67,
+      193,
+      1983,
+      187
+    ],
+    [
+      16,
+      1,
+      84,
+      2351
+    ]
+  ],
+  "vs_dsp_baseline": "DSP shape rules: 0.255 on FLEURS (chance)"
+}

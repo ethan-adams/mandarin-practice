@@ -22,11 +22,17 @@ gate).
   whisper word-timings the product uses in production** (`server/app`), so the
   eval measures the real pipeline, not a lab proxy, and yields isolated
   `(syllable-audio, gold-tone)` pairs for both scoring and training.
-- **Tone Perfect** (MSU, `tone.lib.msu.edu`) — isolated monosyllables, every
-  tone×syllable by 6 speakers. Cleaner isolated-syllable signal, but
-  **non-commercial** and gated behind a click-through, so it is an OPTIONAL
-  supplementary eval only — never a training source for shipped weights, never on
-  the critical path.
+- **Tone Perfect** (MSU) — 9,840 isolated monosyllables, every tone×syllable by 6
+  native speakers, filename-labeled (`a1_FV1_MP3.mp3` = syllable, tone, speaker).
+  This is the PRIMARY tone data (train + eval), because it matches the app's real
+  domain — users say **isolated words**, not sentences. FLEURS/AISHELL are connected
+  speech, whose coarticulation flattens tones and trains poorly (0.29–0.36 balanced);
+  Tone Perfect trains to **91.8% cross-voice** (leave-one-speaker-out). Obtained
+  from a public GitHub mirror (`tayburke/Learning-Tones`) into the gitignored
+  `eval/data/tone_perfect/`.
+  **License: NON-COMMERCIAL.** Fine for this free, non-commercial personal app. If
+  the app is ever monetized, the tone model must be retrained on permissively
+  licensed isolated-syllable data (or Tone Perfect licensed for commercial use).
 
 ## Split discipline
 

@@ -54,17 +54,22 @@ def main() -> None:
         rec = row[i] / row.sum() if row.sum() else 0
         print(f"  T{t}     " + " ".join(f"{v:4d}" for v in row) + f"   recall={rec:.2f}")
 
-    # Export pure-numpy weights (relu MLP + standardizer). sklearn: coefs_ =
-    # [W0(in,h), W1(h,out)], intercepts_ = [b0, b1].
+    # Export a model refit on ALL data (max signal for production); the held-out
+    # number above is the honest generalization estimate. Pure-numpy weights:
+    # sklearn coefs_ = [W0(in,h), W1(h,out)], intercepts_ = [b0, b1].
+    full_scaler = StandardScaler().fit(X)
+    full_clf = MLPClassifier(
+        hidden_layer_sizes=(48,), activation="relu", alpha=1e-3, max_iter=800, early_stopping=True, random_state=0
+    ).fit(full_scaler.transform(X), y)
     np.savez(
         OUT,
-        scaler_mean=scaler.mean_,
-        scaler_scale=scaler.scale_,
-        W0=clf.coefs_[0],
-        b0=clf.intercepts_[0],
-        W1=clf.coefs_[1],
-        b1=clf.intercepts_[1],
-        classes=clf.classes_,
+        scaler_mean=full_scaler.mean_,
+        scaler_scale=full_scaler.scale_,
+        W0=full_clf.coefs_[0],
+        b0=full_clf.intercepts_[0],
+        W1=full_clf.coefs_[1],
+        b1=full_clf.intercepts_[1],
+        classes=full_clf.classes_,
     )
     size = os.path.getsize(OUT)
     print(f"\nexported -> {OUT} ({size / 1024:.1f} KB)")
