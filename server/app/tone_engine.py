@@ -247,6 +247,68 @@ def _voiced_span(times: np.ndarray, f0: np.ndarray) -> Optional[tuple[float, flo
     return float(times[idx[0]]), float(times[idx[-1]])
 
 
+def voiced_islands(times: np.ndarray, f0: np.ndarray, min_len_frames: int = 3) -> list[tuple[float, float]]:
+    """Contiguous voiced runs as (start, end) time windows. `track_f0` already
+    bridged sub-70ms gaps, so runs split only at real unvoiced gaps (consonant
+    closures) — i.e. roughly at syllable boundaries, and each run is a syllable's
+    tonal rhyme. No whisper needed; this is where the tone actually lives."""
+    voiced = ~np.isnan(f0)
+    islands: list[tuple[float, float]] = []
+    i, n = 0, len(f0)
+    while i < n:
+        if not voiced[i]:
+            i += 1
+            continue
+        j = i
+        while j < n and voiced[j]:
+            j += 1
+        if j - i >= min_len_frames:
+            islands.append((float(times[i]), float(times[j - 1])))
+        i = j
+    return islands
+
+
+def segment_by_energy(samples: np.ndarray, sr: int, n: int) -> list[tuple[float, float]]:
+    """Split the active (loud) span into exactly `n` syllable windows at the n-1
+    deepest energy valleys (consonant onsets between syllables); falls back to an
+    equal-time split when there aren't enough clear valleys. Whisper-free — used
+    to cut per-syllable training/eval segments from connected speech. Feature
+    extraction reads voiced frames within each window, so boundary slop is soft."""
+    samples = np.asarray(samples, dtype=np.float64)
+    hop = max(1, int(sr * 0.01))
+    flen = max(hop, int(sr * 0.025))
+    if samples.size < flen or n < 1:
+        return []
+    starts = np.arange(0, samples.size - flen + 1, hop)
+    rms = np.array([float(np.sqrt(np.mean(samples[s : s + flen] ** 2))) for s in starts])
+    t = (starts + flen / 2) / sr
+    kernel = np.ones(5) / 5
+    smooth = np.convolve(rms, kernel, mode="same")
+    peak = float(smooth.max()) or 1.0
+    active = np.where(smooth > 0.18 * peak)[0]
+    if active.size < n or (active[-1] - active[0]) < n:
+        return []
+    lo, hi = int(active[0]), int(active[-1])
+    if n == 1:
+        return [(float(t[lo]), float(t[hi]))]
+
+    candidates = [j for j in range(lo + 1, hi) if smooth[j] <= smooth[j - 1] and smooth[j] <= smooth[j + 1]]
+    bounds: list[int]
+    if len(candidates) >= n - 1:
+        candidates.sort(key=lambda j: smooth[j])  # deepest valleys first
+        chosen: list[int] = []
+        min_sep = max(3, (hi - lo) // (n * 2))
+        for j in candidates:
+            if all(abs(j - c) >= min_sep for c in chosen):
+                chosen.append(j)
+            if len(chosen) == n - 1:
+                break
+        bounds = sorted([lo, *chosen, hi]) if len(chosen) == n - 1 else list(np.linspace(lo, hi, n + 1).astype(int))
+    else:
+        bounds = list(np.linspace(lo, hi, n + 1).astype(int))
+    return [(float(t[bounds[k]]), float(t[bounds[k + 1]])) for k in range(n)]
+
+
 def _syllable_windows(
     times: np.ndarray,
     f0: np.ndarray,
@@ -328,6 +390,23 @@ def _classify(expected_tone: int, semis: np.ndarray, confidence: float) -> Sylla
     return SyllableVerdict(expected_tone, observed, status, confidence, start_hz, end_hz)
 
 
+def _classify_syllable(expected_tone: int, seg_hz: np.ndarray, reference: float, confidence: float) -> SyllableVerdict:
+    """Classify one syllable's tone. Uses the trained model when present; falls
+    back to the DSP shape rules otherwise (so the service works before Phase B's
+    weights are committed, and if the model file is ever missing)."""
+    from .tone_model import TONE_SHAPE_NAME, get_tone_model, tone_features
+
+    model = get_tone_model()
+    if model is not None:
+        feats = tone_features(seg_hz, reference)
+        if feats is not None:
+            predicted = model.predict(feats)
+            observed = TONE_SHAPE_NAME.get(predicted, "level")
+            status: SyllableStatus = "matched" if predicted == expected_tone else "missed"
+            return SyllableVerdict(expected_tone, observed, status, confidence)  # type: ignore[arg-type]
+    return _classify(expected_tone, _semitones(seg_hz, reference), confidence)
+
+
 def assess_tones(
     samples: np.ndarray,
     sr: int,
@@ -366,8 +445,7 @@ def assess_tones(
         if seg_hz.size < 3:
             verdicts.append(SyllableVerdict(tone, "unvoiced", "unscored", confidence))
             continue
-        semis = _semitones(seg_hz, reference)
-        verdict = _classify(tone, semis, confidence)
+        verdict = _classify_syllable(tone, seg_hz, reference, confidence)
         verdict.start_hz = float(seg_hz[0])
         verdict.end_hz = float(seg_hz[-1])
         verdicts.append(verdict)

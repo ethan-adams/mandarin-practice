@@ -5,3 +5,4 @@ pypinyin>=0.51     # gold per-syllable tones from the transcript
 faster-whisper>=1.0  # production segmentation (word timings)
 soundfile>=0.12    # decode audio bytes (torch-free; avoids torchcodec)
 numpy>=1.26
+scikit-learn>=1.3   # offline training only; runtime inference is pure numpy
