@@ -12,3 +12,5 @@ public/hanzi/
 docs/shots/
 docs/e2e/
 scripts/.cache/
+eval/data/
+eval/.cache/

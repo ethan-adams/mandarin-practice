@@ -1,0 +1,56 @@
+{
+  "dataset": "google/fleurs cmn_hans_cn test",
+  "engine": "tone_engine.assess_tones (DSP thresholds, pre-model)",
+  "utterances": 60,
+  "segmentation_1to1_rate": 0.65,
+  "graded_syllables": 824,
+  "tone_accuracy": 0.255,
+  "per_tone": {
+    "1": {
+      "recall": 0.72,
+      "precision": 0.3,
+      "n": 211
+    },
+    "2": {
+      "recall": 0.102,
+      "precision": 0.112,
+      "n": 176
+    },
+    "3": {
+      "recall": 0.007,
+      "precision": 0.125,
+      "n": 136
+    },
+    "4": {
+      "recall": 0.13,
+      "precision": 0.26,
+      "n": 301
+    }
+  },
+  "confusion_gold_x_pred": [
+    [
+      152,
+      45,
+      3,
+      11
+    ],
+    [
+      97,
+      18,
+      3,
+      58
+    ],
+    [
+      80,
+      13,
+      1,
+      42
+    ],
+    [
+      177,
+      84,
+      1,
+      39
+    ]
+  ]
+}

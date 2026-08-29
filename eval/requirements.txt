@@ -1,0 +1,7 @@
+# Eval-only deps (NOT server runtime — keep server/pyproject.toml lean).
+# Install into the server venv:  uv pip install -r eval/requirements.txt
+datasets>=3.0      # stream FLEURS without a full download
+pypinyin>=0.51     # gold per-syllable tones from the transcript
+faster-whisper>=1.0  # production segmentation (word timings)
+soundfile>=0.12    # decode audio bytes (torch-free; avoids torchcodec)
+numpy>=1.26
