@@ -64,8 +64,51 @@ gate. Feature work does not resume until the core is green.
   features and **export to pure-numpy inference** (weights committed, tiny), so the
   box stays $0 and torch-free. A trained absolute-tone classifier also removes the
   per-card native-reference dependency, which does not scale to new content.
-- **C. Word eval + fix** the single-syllable weakness.
+- **C. Word eval + fix** the single-syllable weakness. **Done — see below.**
 - **D. Only then** return to UX/content.
+
+## Phase C — word recognition (the number)
+
+`eval/eval_word_recognition.py` runs the **production whisper** (base / int8 /
+cpu, `language=zh`, `beam_size=1`) over **real native audio** and scores it the
+way the app scores a word: **by sound** (toneless pinyin), so a homophone counts
+as correct (the app's `compareBySound` rule). Both sets are the app's ACTUAL
+vocabulary (`public/mandarin-source.json`); the audio is Tone Perfect isolated
+citation syllables (the same eval-only, non-commercial source as the tone model).
+
+Scorecard: `eval/scorecards/word_recognition.json`.
+
+| set | how the audio is built | n | recovery |
+| --- | --- | --- | --- |
+| **single-syllable** | one real Tone Perfect clip (citation form — exactly what a learner says for a 1-syllable card) | 739 | **40.9%** by-sound |
+| **multi-syllable (2)** | the two component syllables, real recordings from the same speaker, concatenated with a 150 ms gap (citation style, NOT natural coarticulation) | 500 | **64.8%** full-word / **75.4%** per-syllable (SER 0.31) |
+
+**What it proves.** Whisper recovers a **lone** citation syllable's sound **less
+than half the time** (40.9%, steady 32–45% across all six speakers; it also
+over-segments a single syllable into two 16% of the time). A two-syllable word,
+where the second syllable gives the recognizer context, is much better. This is
+the recognizer's own floor on clean native audio — a real learner's mic can only
+be worse. The floor is **intrinsic**, not a tuning miss: an ablation on a 120-clip
+sample moved `beam_size` 1→5 for only +1.7 pts (42.5%→44.2%, within noise) at a
+real latency cost on the 2 GB box, and a neutral Mandarin `initial_prompt` made it
+*worse* (39.2%). There is no cheap knob; a lone syllable simply lacks the context
+whisper needs.
+
+**So the app's existing hedge is correct, now with a number behind it.**
+`deriveAutoRating` already refuses to auto-fail a *single-syllable* miss ("read-back
+is unreliable on a lone syllable") and only fails a *multi-syllable* miss. The
+40.9% vs 64.8% gap is exactly that policy, measured — a single-syllable "miss" is
+far more likely a recognizer failure than a learner error, so it must not grade
+the card. Keep it. Because whisper alone can't confirm a single-syllable card,
+that case must lean on **tone** for its signal — which is why re-enabling tone in
+scheduling (Sequence step after this) matters most for one-syllable cards.
+
+**Caveats, stated.** (1) The multi set is concatenated citation syllables, not
+natural connected speech — natural coarticulation would likely *raise* multi-syllable
+recovery, so 64.8% is a conservative floor, not the ceiling. A natural-connected-speech
+word eval needs **AISHELL-3** (Apache, permissive) audio, not yet downloaded — the
+honest next data step rather than inventing a number. (2) Scored by sound (toneless),
+matching the app; a tone error is caught by the tone engine, not here.
 
 ## Known scaling limit (named, not ignored)
 

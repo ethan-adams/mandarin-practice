@@ -1,0 +1,23 @@
+{
+  "note": "Production whisper (base/int8/cpu, zh, beam 1) on REAL native audio, scored BY SOUND (toneless pinyin) as the app does.",
+  "data": "Tone Perfect isolated citation syllables (non-commercial, eval-only). Multi = two real syllables concatenated (citation style, not natural coarticulation).",
+  "single": {
+    "n": 739,
+    "recovery": 0.4087,
+    "over_segmented_rate": 0.161,
+    "by_speaker": {
+      "FV1": 0.411,
+      "FV2": 0.439,
+      "FV3": 0.455,
+      "MV1": 0.407,
+      "MV2": 0.325,
+      "MV3": 0.415
+    }
+  },
+  "multi": {
+    "n": 500,
+    "full_word_recovery": 0.648,
+    "per_syllable_recovery": 0.754,
+    "syllable_error_rate": 0.312
+  }
+}
