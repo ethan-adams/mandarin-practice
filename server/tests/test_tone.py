@@ -116,3 +116,32 @@ def test_whisper_spans_used_when_counts_match():
     assert a.segmentation == "whisper"
     assert a.syllables[0].observed == "rising"
     assert a.syllables[1].observed == "falling"
+
+
+def test_model_prob_populated_and_in_payload():
+    # A graded syllable carries the trained model's softmax confidence, and it
+    # surfaces as `modelProb` in the payload — the client gates SRS demotion on it.
+    from app.tone_model import get_tone_model
+
+    if get_tone_model() is None:
+        return  # DSP fallback build: no model_prob to assert (and no demotion path)
+    a = assess_tones(_synth([200.0, 200.0]), SR, [1])
+    syl = a.syllables[0]
+    assert syl.model_prob is not None
+    assert 0.0 <= syl.model_prob <= 1.0
+    assert a.status == "matched"
+    assert "modelProb" in syl.as_dict()
+
+
+def test_confident_wrong_tone_is_a_missed_with_probability():
+    # Feed a clear FALLING syllable but expect tone 1: the model must call it a
+    # miss and attach a probability. This is the exact signal that may demote a
+    # single-syllable card to "hard" (never fail it).
+    from app.tone_model import get_tone_model
+
+    if get_tone_model() is None:
+        return
+    a = assess_tones(_synth([270.0, 200.0, 150.0]), SR, [1])
+    syl = a.syllables[0]
+    assert syl.status == "missed"
+    assert syl.model_prob is not None and syl.model_prob > 0.0

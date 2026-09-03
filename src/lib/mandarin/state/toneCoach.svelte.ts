@@ -39,6 +39,7 @@ import {
   type ContourComparison,
 } from '../../utils/mandarinToneReference';
 import { transcribeClip, transcriptionAvailable, type ServerTone } from '../../utils/mandarinTranscribe';
+import { TONE_DEMOTE_CONFIDENCE, type ToneSchedulingSignal } from '../logic/autoRating';
 import { bestSpokenResult, compareBySound, ensurePinyinLookup } from '../../utils/mandarinSound';
 import { characterUnits, pinyinText, type CharacterUnit } from '../logic/pinyin';
 import type { Card } from '../logic/deck';
@@ -419,9 +420,27 @@ export class ToneCoachController {
     return assessment.syllables.map((syllable) => syllable.status);
   });
 
-  /** The tone signal permitted to influence scheduling: ONLY the server-sourced
-   *  contour match. The in-browser detector never touches the calendar. */
-  schedulingTone = $derived<ContourComparison | null>(this.nativeFromServer ? this.nativeMatch : null);
+  /** The ONE tone signal permitted to touch scheduling: the trained model's
+   *  per-syllable verdict (validated 91.8% cross-voice), NOT the contour
+   *  correlation (that was the ~20%-false-off DSP-era signal). Fires only for a
+   *  SINGLE graded syllable the model CONFIDENTLY calls a miss — the exact case
+   *  Phase C proved the word check can't cover (lone-syllable recovery 40.9%),
+   *  and the exact case the false-off curve was measured on (isolated clips).
+   *  Multi-syllable stays word-driven: per-syllable segmentation accuracy on
+   *  connected speech is unmeasured, so tone there is guidance only. Never fails
+   *  a card; at most demotes a correct word to 'hard'. Null unless the model is
+   *  present AND sure. See eval/scorecards/tone_confidence.json. */
+  schedulingTone = $derived.by((): ToneSchedulingSignal | null => {
+    const tone = this.serverTone;
+    if (!tone || !tone.syllables?.length) return null;
+    const graded = tone.syllables.filter((s) => s.expected >= 1 && s.expected <= 4);
+    if (graded.length !== 1) return null; // only the single-syllable case is validated
+    const only = graded[0];
+    if (only.status === 'missed' && typeof only.modelProb === 'number' && only.modelProb >= TONE_DEMOTE_CONFIDENCE) {
+      return { confidentMiss: true, expectedTone: only.expected };
+    }
+    return null;
+  });
 
   /** True when the tone verdict on screen is the in-browser estimate (unvalidated
    *  pitch detector). Kept for callers that only care about the browser fallback. */

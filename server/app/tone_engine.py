@@ -57,6 +57,10 @@ class SyllableVerdict:
     observed: Observed
     status: SyllableStatus
     confidence: float  # 0..1, how much voiced evidence backed this syllable
+    # Softmax confidence of the trained model's prediction (None when the DSP
+    # fallback ran). The client gates SRS demotion on this — a confident miss
+    # (>=0.90) may demote a single-syllable card; see tone_confidence.json.
+    model_prob: Optional[float] = None
     start_hz: Optional[float] = None
     end_hz: Optional[float] = None
 
@@ -66,6 +70,7 @@ class SyllableVerdict:
             "observed": self.observed,
             "status": self.status,
             "confidence": round(self.confidence, 3),
+            "modelProb": None if self.model_prob is None else round(self.model_prob, 3),
             "startHz": None if self.start_hz is None else round(self.start_hz, 1),
             "endHz": None if self.end_hz is None else round(self.end_hz, 1),
         }
@@ -405,10 +410,10 @@ def _classify_syllable(expected_tone: int, seg_hz: np.ndarray, reference: float,
         own_ref = float(np.median(voiced)) if voiced.size else reference
         feats = tone_features(seg_hz, own_ref)
         if feats is not None:
-            predicted = model.predict(feats)
+            predicted, prob = model.predict_conf(feats)
             observed = TONE_SHAPE_NAME.get(predicted, "level")
             status: SyllableStatus = "matched" if predicted == expected_tone else "missed"
-            return SyllableVerdict(expected_tone, observed, status, confidence)  # type: ignore[arg-type]
+            return SyllableVerdict(expected_tone, observed, status, confidence, model_prob=prob)  # type: ignore[arg-type]
     return _classify(expected_tone, _semitones(seg_hz, reference), confidence)
 
 

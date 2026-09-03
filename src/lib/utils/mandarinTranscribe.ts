@@ -18,6 +18,10 @@ export type ServerToneSyllable = {
   observed: 'level' | 'rising' | 'dipping' | 'falling' | 'unvoiced';
   status: 'matched' | 'close' | 'missed' | 'unscored';
   confidence: number;
+  /** Softmax confidence of the trained model's tone prediction (absent when the
+   *  DSP fallback ran on the box). Gates SRS demotion — a miss only counts when
+   *  the model is sure. See eval/scorecards/tone_confidence.json. */
+  modelProb?: number;
 };
 
 export type ServerTone = {

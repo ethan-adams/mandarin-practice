@@ -62,6 +62,18 @@ class ToneModel:
         logits = h @ self.W1 + self.b1
         return int(self.classes[int(np.argmax(logits))])
 
+    def predict_conf(self, feats: np.ndarray) -> tuple[int, float]:
+        """Predicted tone AND its softmax confidence. The confidence gates whether
+        a miss is allowed to demote the SRS: eval/scorecards/tone_confidence.json
+        measured the false-off rate vs. this probability (1.9% at >=0.90)."""
+        x = (feats - self.mean) / self.scale
+        h = np.maximum(x @ self.W0 + self.b0, 0.0)  # relu
+        logits = h @ self.W1 + self.b1
+        e = np.exp(logits - np.max(logits))
+        probs = e / e.sum()
+        i = int(np.argmax(probs))
+        return int(self.classes[i]), float(probs[i])
+
 
 _model: Optional[ToneModel] | str = "unset"
 
